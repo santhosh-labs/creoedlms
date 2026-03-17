@@ -1,0 +1,2 @@
+﻿[dotenv@17.3.1] injecting env (13) from .env -- tip: ≡ƒñû agentic secret storage: https://dotenvx.com/as2
+TiDB Cloud Database connected successfully

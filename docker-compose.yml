@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: creoed-api
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DB_SERVER=db
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong!Passw0rd
+      - DB_NAME=creoedlms
+      - JWT_SECRET=supersecretcreoedjwt
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  frontend:
+    build: ./frontend
+    container_name: creoed-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - lms-network
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: creoed-db
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Developer
+    volumes:
+      - sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -U sa -P YourStrong!Passw0rd -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  sql-data:

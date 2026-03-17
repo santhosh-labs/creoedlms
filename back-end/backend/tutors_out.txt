@@ -1,0 +1,31 @@
+[dotenv@17.3.1] injecting env (7) from .env -- tip: ⚙️  override existing env vars with { override: true }
+Students: [
+  { id: 4, name: 'Santhosh S' },
+  { id: 4, name: 'Hemanth' },
+  { id: 4, name: 'VISHWA S' },
+  { id: 4, name: 'John Doe' },
+  { id: 4, name: 'Jane Smith' }
+]
+ClassStudents: [
+  { ClassID: 1, StudentID: 6, AssignedAt: 2026-03-14T06:03:34.000Z },
+  { ClassID: 1, StudentID: 7, AssignedAt: 2026-03-14T06:48:52.000Z },
+  { ClassID: 2, StudentID: 5, AssignedAt: 2026-03-14T07:23:10.000Z },
+  { ClassID: 2, StudentID: 10, AssignedAt: 2026-03-14T10:30:51.000Z },
+  { ClassID: 2, StudentID: 11, AssignedAt: 2026-03-14T10:30:51.000Z }
+]
+Classes: [
+  {
+    ID: 1,
+    CourseID: 1,
+    TutorID: 3,
+    BatchName: 'Data Science 2026 - prince',
+    CreatedAt: 2026-03-14T05:59:43.000Z
+  },
+  {
+    ID: 2,
+    CourseID: 2,
+    TutorID: 8,
+    BatchName: 'Devops-2026-prince',
+    CreatedAt: 2026-03-14T07:05:45.000Z
+  }
+]

@@ -1,0 +1,291 @@
+const express = require('express');
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { pool } = require('../config/db');
+const { verifyToken } = require('../middleware/auth');
+
+// @route   POST api/auth/login
+// @desc    Authenticate user & get token — accepts email OR studentCode
+// @access  Public
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Please enter all fields' });
+    }
+
+    try {
+        // Allow login via Email OR StudentCode
+        const [rows] = await pool.query(`
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.PasswordHash, u.RoleID, r.RoleName
+            FROM Users u
+            JOIN Roles r ON u.RoleID = r.ID
+            WHERE u.Email = ? OR u.StudentCode = ?
+        `, [email, email.toUpperCase()]);
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const user = rows[0];
+        const isMatch = await bcrypt.compare(password, user.PasswordHash);
+
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const payload = {
+            id: user.ID,
+            email: user.Email,
+            roleId: user.RoleID,
+            role: user.RoleName
+        };
+
+        jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            { expiresIn: 3600 * 24 }, // 1 day
+            (err, token) => {
+                if (err) throw err;
+                res.json({
+                    token,
+                    user: {
+                        id: user.ID,
+                        studentCode: user.StudentCode,
+                        name: user.Name,
+                        email: user.Email,
+                        role: user.RoleName
+                    }
+                });
+            }
+        );
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET api/auth/me
+// @desc    Get user data
+// @access  Private
+router.get('/me', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone, u.DateOfBirth, u.Gender, u.City, u.Country, u.CollegeName, r.RoleName
+            FROM Users u
+            JOIN Roles r ON u.RoleID = r.ID
+            WHERE u.ID = ?
+        `, [req.user.id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// Handle email sending
+const transporter = nodemailer.createTransport({
+    // Use the IPv4 address directly to bypass DNS IPv6 resolution
+    host: '172.65.255.143',
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+    // This tells Nodemailer the server name to expect for the SSL certificate
+    tls: {
+        servername: 'smtp.hostinger.com',
+        rejectUnauthorized: false
+    }
+});
+
+// Verify SMTP connection on startup
+transporter.verify((error) => {
+    if (error) {
+        console.error('⚠️  SMTP connection FAILED:', error.message);
+        console.error('   Check SMTP_USER and SMTP_PASS in your .env file');
+    } else {
+        console.log('✅ SMTP server connected — email sending ready');
+    }
+});
+
+// @route   POST api/auth/forgot-password
+// @desc    Send password reset email
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    try {
+        const [rows] = await pool.query(`SELECT ID, Name FROM Users WHERE Email = ?`, [email]);
+        if (rows.length === 0) {
+            // Return success even if not found to prevent email enumeration
+            return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        }
+
+        const user = rows[0];
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Save token to DB, valid for 1 hour
+        const expiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+        await pool.query(
+            `UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ? WHERE ID = ?`,
+            [resetToken, expiry, user.ID]
+        );
+
+        // Link to frontend reset page
+        // Format: http://localhost:5173/reset-password/TOKEN
+        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+        const now = new Date();
+        const expiryTime = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' });
+
+        const mailOptions = {
+            from: process.env.SMTP_USER,
+            to: email,
+            subject: '🔐 Reset your Creoed LMS password',
+            text: `Hello ${user.Name},\n\nA request has been received to change the password for your Creoed LMS account.\n\nReset your password here: ${resetLink}\n\nIf you did not initiate this request, please contact support@creoed.com.\n\nThank you,\nCreoed Team`,
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Password Reset</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style type="text/css">
+    @import url('https://fonts.googleapis.com/css2?family=Helvetica:wght@400;700&display=swap');
+    body { font-family: 'Helvetica', Arial, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }
+    .email-container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border: 1px solid #e1e8ed; border-radius: 4px; overflow: hidden; }
+    .header { padding: 30px 40px; text-align: left; }
+    .content { padding: 0 40px 40px; color: #2c3338; }
+    .greeting { font-size: 24px; color: #1a2e22; margin-bottom: 30px; }
+    .body-text { font-size: 16px; line-height: 24px; color: #2c3338; margin-bottom: 30px; }
+    .btn-container { text-align: center; margin-bottom: 40px; }
+    .btn { display: inline-block; background-color: #338cf0; color: #ffffff !important; padding: 14px 40px; font-size: 16px; font-weight: 700; text-decoration: none; border-radius: 4px; }
+    .footer { padding: 40px; text-align: center; background-color: #ffffff; border-top: 1px solid #f4f7f9; }
+    .footer-text { font-size: 12px; color: #7b8994; line-height: 18px; margin-bottom: 10px; }
+    .footer-links { font-size: 12px; color: #338cf0; text-decoration: none; margin: 0 5px; }
+    .footer-logo { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <img src="cid:logo" alt="Creoed LMS" width="160" style="display: block; border: 0;">
+    </div>
+    <div class="content">
+      <div class="greeting">Hello ${user.Name},</div>
+      <div class="body-text">
+        <strong>A request has been received to change the password for your Creoed LMS account.</strong>
+      </div>
+      <div class="btn-container">
+        <a href="${resetLink}" class="btn">Reset Password</a>
+      </div>
+      <div class="body-text">
+        If you did not initiate this request, please contact us immediately at <a href="mailto:support@creoed.com" style="color: #338cf0; text-decoration: none;">support@creoed.com</a>.
+      </div>
+      <div class="body-text" style="margin-bottom: 0;">
+        Thank you,<br>
+        The Creoed Team
+      </div>
+    </div>
+    <div class="footer">
+      <div class="footer-logo">
+        <img src="cid:logo" alt="Creoed" width="100" style="opacity: 0.8;">
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">Learn with Confidence</div>
+      </div>
+      <div class="footer-text">
+        &copy; ${new Date().getFullYear()} Creoed Inc. 123 Learning Street, Suite 500, Chennai, TN 600001 India
+      </div>
+      <div>
+        <a href="#" class="footer-links">Blog</a>
+        <a href="#" class="footer-links">GitHub</a>
+        <a href="#" class="footer-links">Twitter</a>
+        <a href="#" class="footer-links">Facebook</a>
+        <a href="#" class="footer-links">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+            `,
+            attachments: [{
+                filename: 'logo.png',
+                path: require('path').join(__dirname, '../../frontend/public/CREO.ED (9).png'),
+                cid: 'logo'
+            }]
+        };
+
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.error('Email not sent: SMTP_USER and SMTP_PASS not configured in .env');
+            // Still return success but log the reset link in the terminal
+            console.log('🔗 RESET LINK (copy this):', resetLink);
+            return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        }
+
+        try {
+            await transporter.sendMail(mailOptions);
+            console.log('✅ Reset email sent to:', email);
+        } catch (mailErr) {
+            console.error('❌ Email send error:', mailErr.message);
+            // Log the link to terminal as fallback
+            console.log('🔗 RESET LINK (copy this as fallback):', resetLink);
+            return res.status(500).json({ message: 'Failed to send email. Please check SMTP settings. Contact admin for help.' });
+        }
+
+        res.json({ message: 'If that email exists, a reset link has been sent.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/auth/reset-password
+// @desc    Reset password using token
+// @access  Public
+router.post('/reset-password', async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) return res.status(400).json({ message: 'Missing fields' });
+
+    try {
+        const [rows] = await pool.query(`
+            SELECT ID, ResetTokenExpiry FROM Users WHERE ResetToken = ?
+        `, [token]);
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid or expired token' });
+        }
+
+        const user = rows[0];
+        if (new Date() > new Date(user.ResetTokenExpiry)) {
+            return res.status(400).json({ message: 'Token has expired' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(newPassword, salt);
+
+        await pool.query(`
+            UPDATE Users SET PasswordHash = ?, ResetToken = NULL, ResetTokenExpiry = NULL WHERE ID = ?
+        `, [hash, user.ID]);
+
+        res.json({ message: 'Password has been reset successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+module.exports = router;
