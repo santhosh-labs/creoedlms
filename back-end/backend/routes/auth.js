@@ -90,34 +90,14 @@ router.get('/me', verifyToken, async (req, res) => {
 });
 
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const fs = require('fs');
+const path = require('path');
 
-// Handle email sending
-const transporter = nodemailer.createTransport({
-    // Use the IPv4 address directly to bypass DNS IPv6 resolution
-    host: '172.65.255.143',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-    // This tells Nodemailer the server name to expect for the SSL certificate
-    tls: {
-        servername: 'smtp.hostinger.com',
-        rejectUnauthorized: false
-    }
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Verify SMTP connection on startup
-transporter.verify((error) => {
-    if (error) {
-        console.error('⚠️  SMTP connection FAILED:', error.message);
-        console.error('   Check SMTP_USER and SMTP_PASS in your .env file');
-    } else {
-        console.log('✅ SMTP server connected — email sending ready');
-    }
-});
+// Resend initialization is done above. No verify() needed like nodemailer.
 
 // @route   POST api/auth/forgot-password
 // @desc    Send password reset email
@@ -151,10 +131,13 @@ router.post('/forgot-password', async (req, res) => {
         const now = new Date();
         const expiryTime = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' });
 
-        const mailOptions = {
-            from: process.env.SMTP_USER,
+        const logoPath = path.resolve(__dirname, '../../../frontend/public/CREO.ED (9).png');
+        const logoContent = fs.existsSync(logoPath) ? fs.readFileSync(logoPath) : null;
+
+        const emailData = {
+            from: 'Creoed <no-reply@creoed.com>',
             to: email,
-            subject: '🔐 Reset your Creoed LMS password',
+            subject: 'Reset your Creoed LMS password',
             text: `Hello ${user.Name},\n\nA request has been received to change the password for your Creoed LMS account.\n\nReset your password here: ${resetLink}\n\nIf you did not initiate this request, please contact support@creoed.com.\n\nThank you,\nCreoed Team`,
             html: `
 <!DOCTYPE html>
@@ -201,48 +184,32 @@ router.post('/forgot-password', async (req, res) => {
         The Creoed Team
       </div>
     </div>
-    <div class="footer">
-      <div class="footer-logo">
-        <img src="cid:logo" alt="Creoed" width="100" style="opacity: 0.8;">
-        <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">Learn with Confidence</div>
-      </div>
-      <div class="footer-text">
-        &copy; ${new Date().getFullYear()} Creoed Inc. 123 Learning Street, Suite 500, Chennai, TN 600001 India
-      </div>
-      <div>
-        <a href="#" class="footer-links">Blog</a>
-        <a href="#" class="footer-links">GitHub</a>
-        <a href="#" class="footer-links">Twitter</a>
-        <a href="#" class="footer-links">Facebook</a>
-        <a href="#" class="footer-links">LinkedIn</a>
-      </div>
-    </div>
   </div>
 </body>
 </html>
             `,
-            attachments: [{
+            attachments: logoContent ? [{
                 filename: 'logo.png',
-                path: require('path').join(__dirname, '../../frontend/public/CREO.ED (9).png'),
-                cid: 'logo'
-            }]
+                content: logoContent,
+                content_id: 'logo'
+            }] : []
         };
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            console.error('Email not sent: SMTP_USER and SMTP_PASS not configured in .env');
+        if (!process.env.RESEND_API_KEY) {
+            console.error('Email not sent: RESEND_API_KEY not configured in .env');
             // Still return success but log the reset link in the terminal
             console.log('🔗 RESET LINK (copy this):', resetLink);
             return res.json({ message: 'If that email exists, a reset link has been sent.' });
         }
 
         try {
-            await transporter.sendMail(mailOptions);
-            console.log('✅ Reset email sent to:', email);
+            await resend.emails.send(emailData);
+            console.log('✅ Reset email sent via Resend to:', email);
         } catch (mailErr) {
-            console.error('❌ Email send error:', mailErr.message);
+            console.error('❌ Resend email send error:', mailErr.message);
             // Log the link to terminal as fallback
             console.log('🔗 RESET LINK (copy this as fallback):', resetLink);
-            return res.status(500).json({ message: 'Failed to send email. Please check SMTP settings. Contact admin for help.' });
+            return res.status(500).json({ message: 'Failed to send email. Please check Resend settings. Contact admin for help.' });
         }
 
         res.json({ message: 'If that email exists, a reset link has been sent.' });
