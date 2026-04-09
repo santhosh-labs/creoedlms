@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-// Production API: Hugging Face Space backend
-const HF_API = 'https://creoed-creoedlms.hf.space/api';
-
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || HF_API,
+    baseURL: 'https://creoed-creoedlms.hf.space/api',
 });
 
 api.interceptors.request.use(
