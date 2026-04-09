@@ -1,221 +1,355 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import api from '../api'; // Adjusted import path depending on project structure
+import { useState, useEffect } from 'react';
+import { Tag, AlertCircle, Plus, X, ToggleLeft, ToggleRight, Clock, CheckCircle } from 'lucide-react';
+import api from '../api';
 
 export default function Coupons() {
-    const [coupons, setCoupons] = useState([]);
-    const [logs, setLogs] = useState([]);
-    const [activeTab, setActiveTab] = useState('list'); // 'list' | 'logs'
-    const [loading, setLoading] = useState(true);
-
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState({
-        code: '',
-        discountPercentage: 100,
-        usageLimit: 1,
-        validUntil: ''
+    const [coupons, setCoupons]       = useState([]);
+    const [logs, setLogs]             = useState([]);
+    const [activeTab, setActiveTab]   = useState('list');
+    const [loading, setLoading]       = useState(true);
+    const [error, setError]           = useState(false);
+    const [showForm, setShowForm]     = useState(false);
+    const [creating, setCreating]     = useState(false);
+    const [formData, setFormData]     = useState({
+        code: '', discountPercentage: 100, usageLimit: 1, validUntil: ''
     });
 
-    useEffect(() => {
-        fetchCoupons();
-        fetchLogs();
-    }, []);
+    useEffect(() => { fetchCoupons(); fetchLogs(); }, []);
 
     const fetchCoupons = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await api.get('/coupons', {
-                headers: { 'x-auth-token': token }
-            });
+            setLoading(true); setError(false);
+            const res = await api.get('/coupons');
             setCoupons(res.data);
         } catch (err) {
-            console.error('Error fetching coupons', err);
-        } finally {
-            setLoading(false);
-        }
+            console.error('Failed to load coupons', err);
+            setError(true);
+        } finally { setLoading(false); }
     };
 
     const fetchLogs = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await api.get('/coupons/logs', {
-                headers: { 'x-auth-token': token }
-            });
+            const res = await api.get('/coupons/logs');
             setLogs(res.data);
-        } catch (err) {
-            console.error('Error fetching logs', err);
-        }
+        } catch (err) { console.error('Failed to load logs', err); }
     };
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        setCreating(true);
         try {
-            const token = localStorage.getItem('token');
-            await api.post('/coupons', formData, {
-                headers: { 'x-auth-token': token }
-            });
+            await api.post('/coupons', formData);
             setShowForm(false);
             setFormData({ code: '', discountPercentage: 100, usageLimit: 1, validUntil: '' });
             fetchCoupons();
+            toast('✓ Coupon created successfully!');
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to create coupon');
-        }
+        } finally { setCreating(false); }
     };
 
     const toggleStatus = async (id, currentStatus) => {
         try {
-            const token = localStorage.getItem('token');
-            await api.put(`/coupons/${id}`, { isActive: !currentStatus }, {
-                headers: { 'x-auth-token': token }
-            });
+            await api.put(`/coupons/${id}`, { isActive: !currentStatus });
             fetchCoupons();
-        } catch (err) {
-            alert('Failed to update status');
-        }
+        } catch { alert('Failed to update status'); }
+    };
+
+    const toast = (msg) => {
+        const el = document.createElement('div');
+        el.textContent = msg;
+        Object.assign(el.style, {
+            position: 'fixed', top: '20px', right: '20px',
+            background: 'var(--success)', color: '#fff',
+            padding: '12px 20px', borderRadius: '8px',
+            zIndex: 9999, fontWeight: 600,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+        });
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    };
+
+    const formatDate = (d) => d
+        ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : 'Never';
+
+    const statusInfo = (c) => {
+        if (!c.IsActive) return { bg: 'var(--danger-bg)', color: 'var(--danger)', label: 'Disabled' };
+        if (c.ValidUntil && new Date(c.ValidUntil) < new Date())
+            return { bg: 'var(--warning-bg)', color: 'var(--warning)', label: 'Expired' };
+        if (c.UsageCount >= c.UsageLimit)
+            return { bg: 'var(--warning-bg)', color: 'var(--warning)', label: 'Exhausted' };
+        return { bg: 'var(--success-bg)', color: 'var(--success)', label: 'Active' };
     };
 
     return (
-        <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2>Coupons Management</h2>
-                <button onClick={() => setShowForm(!showForm)} style={btnStyle}>
-                    {showForm ? 'Cancel' : '+ New Coupon'}
-                </button>
-            </div>
+        <div className="content-wrapper">
+            {error && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
+                    <AlertCircle size={20} />
+                    <strong>Backend Connection Failed — Cannot reach the API.</strong>
+                </div>
+            )}
 
+            {/* ── Create Coupon Form ── */}
             {showForm && (
-                <div style={{ padding: 20, background: '#f8f9fa', borderRadius: 8, marginBottom: 20, border: '1px solid #ddd' }}>
-                    <form onSubmit={handleCreate} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 15 }}>
+                <div className="section-card" style={{ marginBottom: '24px' }}>
+                    <div className="section-header">
+                        <h2 className="section-title">
+                            <Plus size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />
+                            Create New Coupon
+                        </h2>
+                        <button className="btn btn-secondary" onClick={() => setShowForm(false)}>
+                            <X size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Cancel
+                        </button>
+                    </div>
+                    <form onSubmit={handleCreate} style={{ padding: '0 0 8px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'end' }}>
                         <div>
-                            <label>Coupon Code (e.g. FREE100)</label>
-                            <input 
-                                required type="text" 
-                                value={formData.code} 
-                                onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                                style={inputStyle}
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Coupon Code *
+                            </label>
+                            <input
+                                className="form-input"
+                                required
+                                type="text"
+                                placeholder="e.g. FREE100"
+                                value={formData.code}
+                                onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                                style={{ textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}
                             />
                         </div>
                         <div>
-                            <label>Discount %</label>
-                            <input 
-                                required type="number" max="100" min="1"
-                                value={formData.discountPercentage} 
-                                onChange={e => setFormData({...formData, discountPercentage: e.target.value})}
-                                style={inputStyle}
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Discount %
+                            </label>
+                            <input
+                                className="form-input"
+                                required type="number" min="1" max="100"
+                                value={formData.discountPercentage}
+                                onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label>Usage Limit (Total times code can be claimed)</label>
-                            <input 
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Usage Limit
+                            </label>
+                            <input
+                                className="form-input"
                                 required type="number" min="1"
-                                value={formData.usageLimit} 
-                                onChange={e => setFormData({...formData, usageLimit: e.target.value})}
-                                style={inputStyle}
+                                value={formData.usageLimit}
+                                onChange={e => setFormData({ ...formData, usageLimit: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label>Valid Until</label>
-                            <input 
-                                type="datetime-local" 
-                                value={formData.validUntil} 
-                                onChange={e => setFormData({...formData, validUntil: e.target.value})}
-                                style={inputStyle}
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Expiry Date (optional)
+                            </label>
+                            <input
+                                className="form-input"
+                                type="datetime-local"
+                                value={formData.validUntil}
+                                onChange={e => setFormData({ ...formData, validUntil: e.target.value })}
                             />
                         </div>
-                        <div style={{ gridColumn: '1 / -1' }}>
-                            <button type="submit" style={btnStyle}>Create Coupon</button>
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid var(--border)', marginTop: '4px' }}>
+                            <button type="submit" className="btn btn-primary" disabled={creating}>
+                                {creating ? 'Creating...' : '+ Create Coupon'}
+                            </button>
                         </div>
                     </form>
                 </div>
             )}
 
-            <div style={{ marginBottom: 20, display: 'flex', gap: 10 }}>
-                <button 
-                    onClick={() => setActiveTab('list')} 
-                    style={{ ...tabStyle, background: activeTab === 'list' ? '#338cf0' : '#e0e0e0', color: activeTab === 'list' ? 'white' : 'black' }}>
-                    Active & Expired Coupons
-                </button>
-                <button 
-                    onClick={() => setActiveTab('logs')} 
-                    style={{ ...tabStyle, background: activeTab === 'logs' ? '#338cf0' : '#e0e0e0', color: activeTab === 'logs' ? 'white' : 'black' }}>
-                    Usage History Logs
-                </button>
-            </div>
-
-            {loading ? <p>Loading...</p> : (
-                <div style={{ overflowX: 'auto', background: 'white', border: '1px solid #e1e4e8', borderRadius: 8 }}>
-                    {activeTab === 'list' ? (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ background: '#f5f7f9', borderBottom: '2px solid #e1e4e8' }}>
-                                    <th style={thStyle}>Code</th>
-                                    <th style={thStyle}>Discount (%)</th>
-                                    <th style={thStyle}>Uses Count</th>
-                                    <th style={thStyle}>Max Limit</th>
-                                    <th style={thStyle}>Expires On</th>
-                                    <th style={thStyle}>Status</th>
-                                    <th style={thStyle}>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {coupons.map(c => (
-                                    <tr key={c.ID} style={{ borderBottom: '1px solid #e1e4e8' }}>
-                                        <td style={tdStyle}><b>{c.Code}</b></td>
-                                        <td style={tdStyle}>{c.DiscountPercentage}%</td>
-                                        <td style={tdStyle}>{c.UsageCount}</td>
-                                        <td style={tdStyle}>{c.UsageLimit}</td>
-                                        <td style={tdStyle}>{c.ValidUntil ? new Date(c.ValidUntil).toLocaleDateString() : 'Never'}</td>
-                                        <td style={tdStyle}>
-                                            <span style={{ 
-                                                padding: '4px 8px', borderRadius: 4, fontSize: '0.8rem',
-                                                background: c.IsActive ? '#d1e7dd' : '#f8d7da', 
-                                                color: c.IsActive ? '#0f5132' : '#842029' 
-                                            }}>
-                                                {c.IsActive ? 'Active' : 'Disabled'}
-                                            </span>
-                                        </td>
-                                        <td style={tdStyle}>
-                                            <button onClick={() => toggleStatus(c.ID, c.IsActive)} style={{ cursor: 'pointer', padding: '4px 8px' }}>
-                                                {c.IsActive ? 'Disable' : 'Enable'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ background: '#f5f7f9', borderBottom: '2px solid #e1e4e8' }}>
-                                    <th style={thStyle}>Coupon Used</th>
-                                    <th style={thStyle}>Student Code</th>
-                                    <th style={thStyle}>Student Name</th>
-                                    <th style={thStyle}>Course Purchased</th>
-                                    <th style={thStyle}>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {logs.map(log => (
-                                    <tr key={log.ID} style={{ borderBottom: '1px solid #e1e4e8' }}>
-                                        <td style={tdStyle}><b>{log.Code}</b> <span style={{fontSize:'0.8rem'}}>(-{log.DiscountPercentage}%)</span></td>
-                                        <td style={tdStyle}>{log.StudentCode}</td>
-                                        <td style={tdStyle}>{log.StudentName}</td>
-                                        <td style={tdStyle}>{log.CourseName}</td>
-                                        <td style={tdStyle}>{new Date(log.UsedAt).toLocaleString()}</td>
-                                    </tr>
-                                ))}
-                                {logs.length === 0 && <tr><td colSpan="5" style={{padding: 20, textAlign:'center'}}>No coupons have been claimed yet.</td></tr>}
-                            </tbody>
-                        </table>
+            {/* ── Main Card ── */}
+            <div className="section-card">
+                <div className="section-header">
+                    <h2 className="section-title">
+                        <Tag size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />
+                        Coupons Management
+                    </h2>
+                    {!showForm && (
+                        <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+                            <Plus size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> New Coupon
+                        </button>
                     )}
                 </div>
-            )}
+
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '4px', padding: '0 0 0 0', borderBottom: '1px solid var(--border)', marginBottom: '0' }}>
+                    {[
+                        { key: 'list', label: 'Active & Expired Coupons', icon: <Tag size={14} /> },
+                        { key: 'logs', label: 'Usage History Logs', icon: <Clock size={14} /> }
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setActiveTab(tab.key)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                padding: '12px 20px', border: 'none', cursor: 'pointer',
+                                fontFamily: 'inherit', fontSize: '13px', fontWeight: 600,
+                                background: 'transparent',
+                                color: activeTab === tab.key ? 'var(--primary)' : 'var(--text-muted)',
+                                borderBottom: activeTab === tab.key ? '2px solid var(--primary)' : '2px solid transparent',
+                                marginBottom: '-1px', transition: 'all 0.15s',
+                            }}
+                        >
+                            {tab.icon} {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── Coupons Table ── */}
+                {activeTab === 'list' && (
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Discount</th>
+                                    <th>Uses / Limit</th>
+                                    <th>Expires On</th>
+                                    <th>Status</th>
+                                    <th>Toggle</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>Loading...</td></tr>
+                                ) : coupons.length === 0 ? (
+                                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No coupons created yet. Click "+ New Coupon" to get started.</td></tr>
+                                ) : coupons.map(c => {
+                                    const st = statusInfo(c);
+                                    return (
+                                        <tr key={c.ID}>
+                                            <td>
+                                                <span style={{
+                                                    background: 'var(--primary-light)', color: 'var(--primary)',
+                                                    fontWeight: 700, fontSize: '13px', padding: '3px 10px',
+                                                    borderRadius: '4px', letterSpacing: '1px', fontFamily: 'monospace'
+                                                }}>
+                                                    {c.Code}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '15px' }}>
+                                                    {c.DiscountPercentage}%
+                                                </span>
+                                                {c.DiscountPercentage === 100 && (
+                                                    <span style={{ marginLeft: '6px', fontSize: '11px', background: 'var(--success-bg)', color: 'var(--success)', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                                        FREE
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <span style={{ fontWeight: 600 }}>{c.UsageCount}</span>
+                                                <span style={{ color: 'var(--text-muted)' }}> / {c.UsageLimit}</span>
+                                                <div style={{ marginTop: '4px', height: '4px', background: 'var(--border)', borderRadius: '2px', width: '80px' }}>
+                                                    <div style={{
+                                                        height: '100%', borderRadius: '2px',
+                                                        width: `${Math.min(100, (c.UsageCount / c.UsageLimit) * 100)}%`,
+                                                        background: c.UsageCount >= c.UsageLimit ? 'var(--danger)' : 'var(--primary)'
+                                                    }} />
+                                                </div>
+                                            </td>
+                                            <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                                {formatDate(c.ValidUntil)}
+                                            </td>
+                                            <td>
+                                                <span style={{
+                                                    background: st.bg, color: st.color,
+                                                    padding: '3px 10px', borderRadius: '20px',
+                                                    fontSize: '12px', fontWeight: 600
+                                                }}>
+                                                    {st.label}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button
+                                                    onClick={() => toggleStatus(c.ID, c.IsActive)}
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: '4px 12px', fontSize: '12px', display: 'flex',
+                                                        alignItems: 'center', gap: '4px',
+                                                        color: c.IsActive ? 'var(--danger)' : 'var(--success)',
+                                                        borderColor: c.IsActive ? 'var(--danger)' : 'var(--success)',
+                                                    }}
+                                                >
+                                                    {c.IsActive
+                                                        ? <><ToggleRight size={14} /> Disable</>
+                                                        : <><ToggleLeft size={14} /> Enable</>
+                                                    }
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* ── Logs Table ── */}
+                {activeTab === 'logs' && (
+                    <div className="table-container">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Coupon Used</th>
+                                    <th>Student Code</th>
+                                    <th>Student Name</th>
+                                    <th>Course Purchased</th>
+                                    <th>Discount</th>
+                                    <th>Claimed At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {logs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                                            <CheckCircle size={32} style={{ display: 'block', margin: '0 auto 12px', opacity: 0.3 }} />
+                                            No coupons have been claimed yet.
+                                        </td>
+                                    </tr>
+                                ) : logs.map(log => (
+                                    <tr key={log.ID}>
+                                        <td>
+                                            <span style={{
+                                                background: 'var(--primary-light)', color: 'var(--primary)',
+                                                fontWeight: 700, fontSize: '13px', padding: '3px 10px',
+                                                borderRadius: '4px', letterSpacing: '1px', fontFamily: 'monospace'
+                                            }}>
+                                                {log.Code}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span style={{
+                                                background: '#e8f5ee', color: 'var(--primary)',
+                                                fontWeight: 700, fontSize: '11px', padding: '2px 8px',
+                                                borderRadius: '4px', letterSpacing: '0.5px'
+                                            }}>
+                                                {log.StudentCode}
+                                            </span>
+                                        </td>
+                                        <td><strong>{log.StudentName}</strong></td>
+                                        <td>{log.CourseName}</td>
+                                        <td>
+                                            <span style={{ color: 'var(--success)', fontWeight: 700 }}>
+                                                -{log.DiscountPercentage}%
+                                            </span>
+                                        </td>
+                                        <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                            {new Date(log.UsedAt).toLocaleString('en-IN', {
+                                                day: '2-digit', month: 'short', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
-
-const btnStyle = { padding: '8px 16px', background: '#338cf0', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 };
-const tabStyle = { padding: '10px 20px', border: 'none', borderRadius: '4px 4px 0 0', cursor: 'pointer', fontWeight: 600 };
-const inputStyle = { width: '100%', padding: '10px', marginTop: '5px', boxSizing: 'border-box', borderRadius: 4, border: '1px solid #ccc' };
-const thStyle = { padding: '12px 15px', color: '#555', fontWeight: 600 };
-const tdStyle = { padding: '12px 15px', color: '#111' };
