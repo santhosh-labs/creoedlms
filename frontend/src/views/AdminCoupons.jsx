@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_BASE_URL from '../../../api'; // Adjusted import path depending on project structure
+import api from '../api'; // Adjusted import path depending on project structure
 
 export default function Coupons() {
     const [coupons, setCoupons] = useState([]);
@@ -24,7 +24,7 @@ export default function Coupons() {
     const fetchCoupons = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/coupons`, {
+            const res = await api.get('/coupons', {
                 headers: { 'x-auth-token': token }
             });
             setCoupons(res.data);
@@ -38,7 +38,7 @@ export default function Coupons() {
     const fetchLogs = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`${API_BASE_URL}/coupons/logs`, {
+            const res = await api.get('/coupons/logs', {
                 headers: { 'x-auth-token': token }
             });
             setLogs(res.data);
@@ -51,7 +51,7 @@ export default function Coupons() {
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            await axios.post(`${API_BASE_URL}/coupons`, formData, {
+            await api.post('/coupons', formData, {
                 headers: { 'x-auth-token': token }
             });
             setShowForm(false);
@@ -65,7 +65,7 @@ export default function Coupons() {
     const toggleStatus = async (id, currentStatus) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`${API_BASE_URL}/coupons/${id}`, { isActive: !currentStatus }, {
+            await api.put(`/coupons/${id}`, { isActive: !currentStatus }, {
                 headers: { 'x-auth-token': token }
             });
             fetchCoupons();
