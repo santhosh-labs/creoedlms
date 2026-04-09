@@ -84,6 +84,105 @@ export default function Coupons() {
 
     return (
         <div className="content-wrapper">
+            <style>{`
+                @keyframes modalSlideIn {
+                    from { opacity: 0; transform: translateY(-24px) scale(0.97); }
+                    to   { opacity: 1; transform: translateY(0)  scale(1); }
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .coupon-modal-overlay {
+                    position: fixed; inset: 0;
+                    background: rgba(0,0,0,0.6);
+                    backdrop-filter: blur(4px);
+                    z-index: 1000;
+                    display: flex; align-items: center; justify-content: center;
+                    padding: 24px;
+                }
+                .coupon-modal {
+                    background: var(--card-bg, #1e2130);
+                    border: 1px solid var(--border, rgba(255,255,255,0.08));
+                    border-radius: 16px;
+                    width: 100%; max-width: 540px;
+                    box-shadow: 0 32px 80px rgba(0,0,0,0.45);
+                    animation: modalSlideIn 0.22s ease;
+                    overflow: hidden;
+                }
+                .coupon-modal-header {
+                    display: flex; align-items: center; justify-content: space-between;
+                    padding: 22px 28px 20px;
+                    border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+                }
+                .coupon-modal-title {
+                    display: flex; align-items: center; gap: 12px;
+                    font-size: 16px; font-weight: 700;
+                    color: var(--text-primary, #fff); margin: 0;
+                }
+                .coupon-modal-title-icon {
+                    width: 36px; height: 36px; border-radius: 10px;
+                    background: var(--primary-light, rgba(99,102,241,0.12));
+                    display: flex; align-items: center; justify-content: center;
+                    color: var(--primary, #6366f1); flex-shrink: 0;
+                }
+                .coupon-modal-close {
+                    width: 32px; height: 32px; border-radius: 8px;
+                    border: 1px solid var(--border, rgba(255,255,255,0.1));
+                    background: transparent; cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    color: var(--text-muted, #888);
+                    transition: background 0.15s, color 0.15s;
+                }
+                .coupon-modal-close:hover { background: var(--danger-bg); color: var(--danger); }
+                .coupon-modal-body { padding: 28px; }
+                .coupon-field-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 22px 20px;
+                }
+                .coupon-field { display: flex; flex-direction: column; gap: 8px; }
+                .coupon-field-full { grid-column: 1 / -1; }
+                .coupon-label {
+                    font-size: 11.5px; font-weight: 700; letter-spacing: 0.6px;
+                    text-transform: uppercase; color: var(--text-muted, #888);
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .coupon-label .req { color: var(--danger, #ef4444); font-size: 13px; }
+                .coupon-label .opt {
+                    font-size: 10px; font-weight: 500; color: var(--text-muted);
+                    text-transform: none; letter-spacing: 0; opacity: 0.7;
+                }
+                .coupon-hint {
+                    font-size: 11px; color: var(--text-muted, #888);
+                    margin-top: 1px; line-height: 1.4; opacity: 0.8;
+                }
+                .date-input-wrap { position: relative; }
+                .date-input-wrap .form-input {
+                    width: 100%; box-sizing: border-box;
+                    padding-right: 40px;
+                    color-scheme: dark;
+                    cursor: pointer;
+                }
+                .date-input-wrap .cal-icon {
+                    position: absolute; right: 12px; top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                    color: var(--text-muted, #888);
+                    display: flex;
+                }
+                .coupon-modal-footer {
+                    display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+                    padding: 18px 28px 24px;
+                    border-top: 1px solid var(--border, rgba(255,255,255,0.08));
+                    margin-top: 4px;
+                }
+                .spin-ring {
+                    width: 14px; height: 14px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-top-color: #fff; border-radius: 50%;
+                    animation: spin 0.7s linear infinite;
+                    display: inline-block;
+                }
+            `}</style>
+
             {error && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
                     <AlertCircle size={20} />
@@ -91,72 +190,115 @@ export default function Coupons() {
                 </div>
             )}
 
-            {/* ── Create Coupon Form ── */}
+            {/* ── Create Coupon Modal ── */}
             {showForm && (
-                <div className="section-card" style={{ marginBottom: '24px' }}>
-                    <div className="section-header">
-                        <h2 className="section-title">
-                            <Plus size={18} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '8px' }} />
-                            Create New Coupon
-                        </h2>
-                        <button className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                            <X size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} /> Cancel
-                        </button>
-                    </div>
-                    <form onSubmit={handleCreate} style={{ padding: '0 0 8px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'end' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                                Coupon Code *
-                            </label>
-                            <input
-                                className="form-input"
-                                required
-                                type="text"
-                                placeholder="e.g. FREE100"
-                                value={formData.code}
-                                onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                style={{ textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                                Discount %
-                            </label>
-                            <input
-                                className="form-input"
-                                required type="number" min="1" max="100"
-                                value={formData.discountPercentage}
-                                onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                                Usage Limit
-                            </label>
-                            <input
-                                className="form-input"
-                                required type="number" min="1"
-                                value={formData.usageLimit}
-                                onChange={e => setFormData({ ...formData, usageLimit: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-                                Expiry Date (optional)
-                            </label>
-                            <input
-                                className="form-input"
-                                type="datetime-local"
-                                value={formData.validUntil}
-                                onChange={e => setFormData({ ...formData, validUntil: e.target.value })}
-                            />
-                        </div>
-                        <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid var(--border)', marginTop: '4px' }}>
-                            <button type="submit" className="btn btn-primary" disabled={creating}>
-                                {creating ? 'Creating...' : '+ Create Coupon'}
+                <div className="coupon-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
+                    <div className="coupon-modal">
+                        {/* Header */}
+                        <div className="coupon-modal-header">
+                            <h2 className="coupon-modal-title">
+                                <span className="coupon-modal-title-icon"><Tag size={17} /></span>
+                                Create New Coupon
+                            </h2>
+                            <button className="coupon-modal-close" onClick={() => setShowForm(false)}>
+                                <X size={15} />
                             </button>
                         </div>
-                    </form>
+
+                        {/* Body */}
+                        <form onSubmit={handleCreate}>
+                            <div className="coupon-modal-body">
+                                <div className="coupon-field-grid">
+
+                                    {/* Coupon Code — full width */}
+                                    <div className="coupon-field coupon-field-full">
+                                        <label className="coupon-label">
+                                            Coupon Code <span className="req">*</span>
+                                        </label>
+                                        <input
+                                            className="form-input"
+                                            required
+                                            type="text"
+                                            placeholder="e.g. WELCOME50"
+                                            value={formData.code}
+                                            onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                                            style={{ textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700, fontSize: '15px' }}
+                                        />
+                                        <span className="coupon-hint">Auto-uppercased. Use letters and numbers only.</span>
+                                    </div>
+
+                                    {/* Discount % */}
+                                    <div className="coupon-field">
+                                        <label className="coupon-label">Discount %</label>
+                                        <input
+                                            className="form-input"
+                                            required type="number" min="1" max="100"
+                                            value={formData.discountPercentage}
+                                            onChange={e => setFormData({ ...formData, discountPercentage: e.target.value })}
+                                        />
+                                        <span className="coupon-hint">Set 100 for a fully free enrolment.</span>
+                                    </div>
+
+                                    {/* Usage Limit */}
+                                    <div className="coupon-field">
+                                        <label className="coupon-label">Usage Limit</label>
+                                        <input
+                                            className="form-input"
+                                            required type="number" min="1"
+                                            value={formData.usageLimit}
+                                            onChange={e => setFormData({ ...formData, usageLimit: e.target.value })}
+                                        />
+                                        <span className="coupon-hint">Max students who can redeem this code.</span>
+                                    </div>
+
+                                    {/* Expiry Date — full width, styled date picker */}
+                                    <div className="coupon-field coupon-field-full">
+                                        <label className="coupon-label">
+                                            Expiry Date &nbsp;<span className="opt">(optional)</span>
+                                        </label>
+                                        <div className="date-input-wrap">
+                                            <input
+                                                className="form-input"
+                                                type="date"
+                                                min={new Date().toISOString().split('T')[0]}
+                                                value={formData.validUntil}
+                                                onChange={e => setFormData({ ...formData, validUntil: e.target.value })}
+                                            />
+                                            <span className="cal-icon">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" strokeWidth="2"
+                                                    strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                                    <line x1="8"  y1="2" x2="8"  y2="6"/>
+                                                    <line x1="3"  y1="10" x2="21" y2="10"/>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <span className="coupon-hint">A browser calendar will open when you click the field. Leave blank for no expiry.</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="coupon-modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={creating} style={{ minWidth: 148 }}>
+                                    {creating ? (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <span className="spin-ring" /> Creating…
+                                        </span>
+                                    ) : (
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <Plus size={15} /> Create Coupon
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             )}
 
@@ -175,7 +317,7 @@ export default function Coupons() {
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', gap: '4px', padding: '0 0 0 0', borderBottom: '1px solid var(--border)', marginBottom: '0' }}>
+                <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid var(--border)', marginBottom: '0' }}>
                     {[
                         { key: 'list', label: 'Active & Expired Coupons', icon: <Tag size={14} /> },
                         { key: 'logs', label: 'Usage History Logs', icon: <Clock size={14} /> }
