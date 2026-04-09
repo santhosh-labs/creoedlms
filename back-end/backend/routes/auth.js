@@ -66,7 +66,72 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// @route   GET api/auth/me
+// @route   POST api/auth/public-register
+// @desc    Public endpoint for student registration from the marketing website
+// @access  Public
+router.post('/public-register', async (req, res) => {
+    const { name, email, phone, password, dob, gender, city, country, collegeName, courseId } = req.body;
+
+    if (!name || !email || !password) {
+        return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        const [userExists] = await connection.query('SELECT ID FROM Users WHERE Email = ?', [email]);
+        if (userExists.length > 0) return res.status(400).json({ message: 'User already exists with this email' });
+
+        // Get Student Role ID
+        const [[role]] = await connection.query('SELECT ID, RoleName FROM Roles WHERE RoleName = "Student"');
+        if (!role) return res.status(500).json({ message: 'Student role not configured in DB' });
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await connection.beginTransaction();
+
+        const [insertResult] = await connection.query(
+            `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null]
+        );
+        const newUserId = insertResult.insertId;
+
+        // Generate unique StudentCode CR + Year + 4 digits
+        const year = new Date().getFullYear().toString().slice(-2);
+        let userCode = `${year}0000`; // fallback
+        let exists = true, attempts = 0;
+        while (exists && attempts < 20) {
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            userCode = `CR${year}${rand}`;
+            const [rows] = await connection.query('SELECT ID FROM Users WHERE StudentCode = ?', [userCode]);
+            exists = rows.length > 0;
+            attempts++;
+        }
+        await connection.query('UPDATE Users SET StudentCode = ? WHERE ID = ?', [userCode, newUserId]);
+
+        // If courseId provided, register intent to buy (Fee row: Pending)
+        if (courseId) {
+            const [[courseRow]] = await connection.query('SELECT TotalFee FROM Courses WHERE ID = ?', [courseId]);
+            if (courseRow) {
+                await connection.query(
+                    'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus) VALUES (?, ?, ?, 0, "Pending")',
+                    [newUserId, courseId, courseRow.TotalFee]
+                );
+            }
+        }
+
+        await connection.commit();
+
+        res.status(201).json({ message: 'Registration successful', studentCode: userCode });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).send('Server Error');
+    } finally {
+        connection.release();
+    }
+});
 // @desc    Get user data
 // @access  Private
 router.get('/me', verifyToken, async (req, res) => {

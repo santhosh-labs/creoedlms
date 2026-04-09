@@ -28,6 +28,63 @@ router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req
     }
 });
 
+// @route   GET api/courses/public
+// @desc    Get all courses for public display on the Creoed website (no auth required)
+// @access  Public
+router.get('/public', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt FROM Courses ORDER BY CreatedAt DESC'
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('[Public Courses]', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// @route   GET api/courses/public/:id
+// @desc    Get single course details including curriculum (modules/lessons) for public display
+// @access  Public
+router.get('/public/:id', async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        // Fetch course details
+        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt FROM Courses WHERE ID = ?', [courseId]);
+        
+        if (courses.length === 0) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        const course = courses[0];
+
+        // Fetch curriculum (we'll fetch modules and lessons from one representative class for this course, e.g. the first one)
+        const [classes] = await pool.query('SELECT ID FROM Classes WHERE CourseID = ? LIMIT 1', [courseId]);
+        let modulesData = [];
+        
+        if (classes.length > 0) {
+            const classId = classes[0].ID;
+            const [modules] = await pool.query('SELECT ID, Title, Description FROM Modules WHERE ClassID = ?', [classId]);
+            const [lessons] = await pool.query(`
+                SELECT l.ID, l.ModuleID, l.Title, l.Type 
+                FROM Lessons l 
+                JOIN Modules m ON l.ModuleID = m.ID 
+                WHERE m.ClassID = ?
+            `, [classId]);
+
+            modulesData = modules.map(mod => ({
+                ...mod,
+                lessons: lessons.filter(l => l.ModuleID === mod.ID)
+            }));
+        }
+
+        course.curriculum = modulesData;
+        res.json(course);
+    } catch (err) {
+        console.error('[Public Course Details]', err);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // @route   GET api/courses
 // @desc    Get all courses
 // @access  Private

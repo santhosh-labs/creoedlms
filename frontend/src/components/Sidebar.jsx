@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, MessageSquare, MessageCircle, CreditCard, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
+import { BookOpen, Calendar, MessageSquare, MessageCircle, CreditCard, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, ChevronRight, Shield, Tag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Sidebar({ role }) {
@@ -47,6 +47,7 @@ export default function Sidebar({ role }) {
                     { name: 'User Management', path: '/students', icon: <Users className="nav-item-icon" /> },
                     { name: 'Program Management', path: '/courses', icon: <BookOpen className="nav-item-icon" /> },
                     { name: 'Financials', path: '/fees', icon: <CreditCard className="nav-item-icon" /> },
+                    { name: 'Coupons', path: '/coupons', icon: <Tag className="nav-item-icon" /> },
                     { name: 'Notice Board', path: '/announcements', icon: <MessageSquare className="nav-item-icon" /> },
                     { name: 'Backup & Restore', path: '/backup', icon: <Shield className="nav-item-icon" /> },
                 ];

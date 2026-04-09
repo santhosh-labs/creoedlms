@@ -24,6 +24,7 @@ import MyAccount from '../views/MyAccount';
 import Messages from '../views/Messages';
 import Settings from '../views/Settings';
 import BackupRestore from '../views/BackupRestore';
+import AdminCoupons from '../views/AdminCoupons';
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
@@ -70,12 +71,14 @@ export default function Dashboard() {
                 if (location.pathname === '/courses')     return <SuperAdminCourses user={user} />;
                 if (location.pathname === '/fees')        return <SuperAdminFees user={user} />;
                 if (location.pathname === '/backup')     return <BackupRestore user={user} />;
+                if (location.pathname === '/coupons')    return <AdminCoupons user={user} />;
                 return <AdminDashboard user={user} />;
             case 'Super Admin':
                 if (location.pathname === '/students')    return <SuperAdminStudents user={user} />;
                 if (location.pathname === '/courses')     return <SuperAdminCourses user={user} />;
                 if (location.pathname === '/fees')        return <SuperAdminFees user={user} />;
                 if (location.pathname === '/backup')     return <BackupRestore user={user} />;
+                if (location.pathname === '/coupons')    return <AdminCoupons user={user} />;
                 return <SuperAdminDashboard user={user} />;
             default: return <StudentDashboard user={user} />;
         }
