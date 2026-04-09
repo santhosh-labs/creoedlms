@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// Automatically points to your live Hugging Face backend API
 const api = axios.create({
-    baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7860') + '/api',
+    baseURL: (import.meta.env.VITE_API_URL || 'https://creoed-creoedlms.hf.space') + '/api',
 });
 
 api.interceptors.request.use(
