@@ -372,7 +372,7 @@ export default function SuperAdminCourses() {
                                                     title="Delete Batch"
                                                 >
                                                     <Trash2 size={16} />
-                                                </button
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
