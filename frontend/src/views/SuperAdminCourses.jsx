@@ -30,7 +30,7 @@ export default function SuperAdminCourses() {
 
     // Add Course modal
     const [showAddCourse, setShowAddCourse] = useState(false);
-    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', totalFee: '', image: '', coverImage: '' });
+    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '' });
     const [courseLoading, setCourseLoading] = useState(false);
 
     // Add Batch modal
@@ -74,11 +74,17 @@ export default function SuperAdminCourses() {
             await api.post('/courses', {
                 courseCode: courseForm.courseCode.toUpperCase().trim(),
                 name: courseForm.name,
-                description: courseForm.description,
+                overview: courseForm.overview,
                 totalFee: parseFloat(courseForm.totalFee),
-                image: courseForm.image, coverImage: courseForm.coverImage
+                image: courseForm.image,
+                coverImage: courseForm.coverImage,
+                targetAudience: courseForm.targetAudience,
+                skillLevel: courseForm.skillLevel,
+                language: courseForm.language,
+                courseOutcome: courseForm.courseOutcome,
+                category: courseForm.category,
             });
-            setCourseForm({ courseCode: '', name: '', description: '', totalFee: '', image: '' });
+            setCourseForm({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '' });
             setShowAddCourse(false);
             fetchData();
         } catch (err) {
@@ -165,68 +171,16 @@ export default function SuperAdminCourses() {
                 </div>
                 <div className="section-card" style={{ maxWidth: '600px', margin: '0 auto', padding: '32px' }}>
                     <form onSubmit={handleAddCourse} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Code * <span style={{ fontSize: '11px', fontWeight: 400 }}>(e.g. DS101)</span></label>
-                            <input className="form-input" placeholder="e.g. DS101, WEB202" value={courseForm.courseCode} onChange={e => setCourseForm({ ...courseForm, courseCode: e.target.value })} style={{ textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }} required />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Name *</label>
-                            <input className="form-input" placeholder="e.g. Full Stack Web Development" value={courseForm.name} onChange={e => setCourseForm({ ...courseForm, name: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Description</label>
-                            <textarea className="form-input" placeholder="Brief description of this course (optional)" value={courseForm.description} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} rows={4} style={{ resize: 'vertical' }} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (â‚¹) *</label>
-                            <input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail (Image) <span style={{fontWeight:400,fontSize:'11px'}}>â€” used in course listing cards</span></label>
-                            <input 
-                                className="form-input" 
-                                type="file" 
-                                accept="image/*" 
-                                onChange={async e => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                        const compressed = await compressImage(file, 800, 500, 0.7);
-                                        setCourseForm(prev => ({ ...prev, image: compressed }));
-                                    }
-                                }} 
-                            />
-                            {courseForm.image && (
-                                <div style={{ marginTop: '10px' }}>
-                                    <img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} />
-                                    <span style={{fontSize:'11px',color:'var(--text-muted)',marginLeft:'8px'}}>âœ“ Compressed</span>
-                                </div>
-                            )}
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length) <span style={{fontWeight:400,fontSize:'11px'}}>â€” used on the course detail page</span></label>
-                            <input 
-                                className="form-input" 
-                                type="file" 
-                                accept="image/*" 
-                                onChange={async e => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                        const compressed = await compressImage(file, 1200, 400, 0.75);
-                                        setCourseForm(prev => ({ ...prev, coverImage: compressed }));
-                                    }
-                                }} 
-                            />
-                            {courseForm.coverImage && (
-                                <div style={{ marginTop: '10px' }}>
-                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
-                                    <span style={{fontSize:'11px',color:'var(--text-muted)'}}>âœ“ Compressed</span>
-                                </div>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowAddCourse(false)}>Cancel</button>
-                            <button type="submit" className="btn btn-primary" disabled={courseLoading}>{courseLoading ? 'Saving...' : 'Create Course'}</button>
-                        </div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Code * <span style={{ fontSize: '11px', fontWeight: 400 }}>(e.g. DS101)</span></label><input className="form-input" placeholder="e.g. DS101, WEB202" value={courseForm.courseCode} onChange={e => setCourseForm({ ...courseForm, courseCode: e.target.value })} style={{ textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }} required /></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Name *</label><input className="form-input" placeholder="e.g. Full Stack Web Development" value={courseForm.name} onChange={e => setCourseForm({ ...courseForm, name: e.target.value })} required /></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Overview</label><textarea className="form-input" placeholder="What is this course about?" value={courseForm.overview} onChange={e => setCourseForm({ ...courseForm, overview: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Target Audience <span style={{ fontWeight: 400, fontSize: '11px' }}>— one point per line</span></label><textarea className="form-input" placeholder={"Freshers looking to start their career\nWorking professionals upskilling"} value={courseForm.targetAudience} onChange={e => setCourseForm({ ...courseForm, targetAudience: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Skill Level</label><select className="form-input" value={courseForm.skillLevel} onChange={e => setCourseForm({ ...courseForm, skillLevel: e.target.value })}><option value="">Select level</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>All Levels</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Language</label><select className="form-input" value={courseForm.language} onChange={e => setCourseForm({ ...courseForm, language: e.target.value })}><option value="">Select language</option><option>English</option><option>Tamil</option><option>Hindi</option><option>Telugu</option><option>Malayalam</option></select></div></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome <span style={{ fontWeight: 400, fontSize: '11px' }}>— one point per line</span></label><textarea className="form-input" placeholder={"Build real-world projects\nGet job-ready skills\nEarn industry certificate"} value={courseForm.courseOutcome} onChange={e => setCourseForm({ ...courseForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (&#8377;) *</label><input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required /></div></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>— card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 800, 500, 0.7); setCourseForm(prev => ({ ...prev, image: compressed })); } }} />{courseForm.image && (<div style={{ marginTop: '10px' }}><img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed</span></div>)}</div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image <span style={{ fontWeight: 400, fontSize: '11px' }}>— course detail page</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 400, 0.75); setCourseForm(prev => ({ ...prev, coverImage: compressed })); } }} />{courseForm.coverImage && (<div style={{ marginTop: '10px' }}><img src={courseForm.coverImage} alt="Cover Preview" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>&#10003; Compressed</span></div>)}</div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}><button type="button" className="btn btn-secondary" onClick={() => setShowAddCourse(false)}>Cancel</button><button type="submit" className="btn btn-primary" disabled={courseLoading}>{courseLoading ? 'Saving...' : 'Create Course'}</button></div>
                     </form>
                 </div>
             </div>

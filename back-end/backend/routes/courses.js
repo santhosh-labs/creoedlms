@@ -7,18 +7,18 @@ const { pool } = require('../config/db');
 // @desc    Create a new course
 // @access  Private (Admin, Super Admin)
 router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
-    const { name, description, totalFee, courseCode, image, coverImage } = req.body;
+    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category } = req.body;
 
     if (!name || !totalFee) return res.status(400).json({ message: 'Name and Total Fee are required' });
     if (!courseCode) return res.status(400).json({ message: 'Course Code is required' });
 
     try {
         const [result] = await pool.query(
-            'INSERT INTO Courses (CourseCode, Name, Description, TotalFee, Image, CoverImage) VALUES (?, ?, ?, ?, ?, ?)',
-            [courseCode, name, description || null, totalFee, image || null, coverImage || null]
+            'INSERT INTO Courses (CourseCode, Name, Overview, TotalFee, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [courseCode, name, overview || null, totalFee, image || null, coverImage || null, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null]
         );
 
-        res.status(201).json({ id: result.insertId, courseCode, name, description, totalFee, image, coverImage });
+        res.status(201).json({ id: result.insertId, courseCode, name, overview, totalFee, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ message: `Course Code "${courseCode}" already exists. Please use a unique code.` });
@@ -34,7 +34,7 @@ router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req
 router.get('/public', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt, Image, CoverImage FROM Courses ORDER BY CreatedAt DESC'
+            'SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category FROM Courses ORDER BY CreatedAt DESC'
         );
         res.json(rows);
     } catch (err) {
