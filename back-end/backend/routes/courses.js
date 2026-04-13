@@ -90,9 +90,30 @@ router.get('/public/:id', async (req, res) => {
 // @access  Private
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt FROM Courses ORDER BY CreatedAt DESC');
+        const [rows] = await pool.query('SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category FROM Courses ORDER BY CreatedAt DESC');
         res.json(rows);
     } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/courses/:id
+// @desc    Update an existing course
+// @access  Private (Admin, Super Admin)
+router.put('/:id', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category } = req.body;
+    const courseId = req.params.id;
+
+    if (!name || !totalFee) return res.status(400).json({ message: 'Name and Total Fee are required' });
+
+    try {
+        await pool.query(
+            'UPDATE Courses SET CourseCode=?, Name=?, Overview=?, TotalFee=?, TargetAudience=?, SkillLevel=?, Language=?, CourseOutcome=?, Category=?, Image=COALESCE(?,Image), CoverImage=COALESCE(?,CoverImage) WHERE ID=?',
+            [courseCode, name, overview || null, totalFee, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null, image || null, coverImage || null, courseId]
+        );
+        res.json({ message: 'Course updated successfully' });
+    } catch (err) {
+        console.error(err);
         res.status(500).send('Server Error');
     }
 });
