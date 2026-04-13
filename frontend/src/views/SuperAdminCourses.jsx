@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, AlertCircle, Plus, X, Users, RefreshCw } from 'lucide-react';
+import { BookOpen, AlertCircle, Plus, X, Users, RefreshCw, Trash2 } from 'lucide-react';
 import api from '../api';
 
 export default function SuperAdminCourses() {
@@ -107,6 +107,26 @@ export default function SuperAdminCourses() {
             alert(err.response?.data?.message || 'Failed to update tutor.');
         } finally {
             setChangeTutorLoading(false);
+        }
+    };
+
+    const handleDeleteCourse = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete course "${name}"? This action cannot be undone.`)) return;
+        try {
+            await api.delete(`/courses/${id}`);
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete course.');
+        }
+    };
+
+    const handleDeleteBatch = async (id, name) => {
+        if (!window.confirm(`Are you sure you want to delete batch "${name}"? This action cannot be undone.`)) return;
+        try {
+            await api.delete(`/courses/classes/${id}`);
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete batch.');
         }
     };
 
@@ -253,6 +273,7 @@ export default function SuperAdminCourses() {
                                     <th>Course Name</th>
                                     <th>Total Fee</th>
                                     <th>Created</th>
+                                    <th style={{ textAlign: 'right' }}>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -271,6 +292,17 @@ export default function SuperAdminCourses() {
                                             <td><strong>{c.Name}</strong></td>
                                             <td><strong style={{ color: 'var(--primary)' }}>₹{Number(c.TotalFee).toLocaleString()}</strong></td>
                                             <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{formatDate(c.CreatedAt)}</td>
+                                            <td style={{ textAlign: 'right' }}>
+                                                <button 
+                                                    onClick={() => handleDeleteCourse(c.ID, c.Name)}
+                                                    style={{ color: 'var(--danger)', padding: '6px', borderRadius: '4px', transition: 'background 0.2s', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                                                    onMouseOver={e => e.currentTarget.style.background = 'var(--danger-bg)'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                                    title="Delete Course"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -327,11 +359,20 @@ export default function SuperAdminCourses() {
                                             <td>
                                                 <button
                                                     className="btn btn-secondary"
-                                                    style={{ padding: '4px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                                    style={{ padding: '4px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px', marginRight: '8px' }}
                                                     onClick={() => { setChangeTutorClass(c); setNewTutorId(''); }}
                                                 >
                                                     <RefreshCw size={12} /> Change Tutor
                                                 </button>
+                                                <button 
+                                                    onClick={() => handleDeleteBatch(c.ClassID, c.BatchName)}
+                                                    style={{ color: 'var(--danger)', padding: '6px', borderRadius: '4px', transition: 'background 0.2s', background: 'transparent', border: 'none', cursor: 'pointer', verticalAlign: 'middle' }}
+                                                    onMouseOver={e => e.currentTarget.style.background = 'var(--danger-bg)'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                                    title="Delete Batch"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button
                                             </td>
                                         </tr>
                                     ))

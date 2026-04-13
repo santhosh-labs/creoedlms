@@ -207,4 +207,44 @@ router.put('/classes/:classId/tutor', verifyToken, authorizeRoles('Super Admin',
     }
 });
 
+// @route   DELETE api/courses/:id
+// @desc    Delete a course
+// @access  Private (Admin, Super Admin)
+router.delete('/:id', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const [result] = await pool.query('DELETE FROM Courses WHERE ID = ?', [courseId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Course not found.' });
+        }
+        res.json({ message: 'Course deleted successfully.' });
+    } catch (err) {
+        if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(400).json({ message: 'Cannot delete course because it has active batches/classes attached to it. Delete the classes first.' });
+        }
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   DELETE api/courses/classes/:classId
+// @desc    Delete a class batch
+// @access  Private (Admin, Super Admin)
+router.delete('/classes/:classId', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        const classId = req.params.classId;
+        const [result] = await pool.query('DELETE FROM Classes WHERE ID = ?', [classId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Class batch not found.' });
+        }
+        res.json({ message: 'Class batch deleted successfully.' });
+    } catch (err) {
+        if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+            return res.status(400).json({ message: 'Cannot delete batch. Students or modules are already enrolled/assigned here.' });
+        }
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;
