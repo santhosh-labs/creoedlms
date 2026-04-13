@@ -7,18 +7,18 @@ const { pool } = require('../config/db');
 // @desc    Create a new course
 // @access  Private (Admin, Super Admin)
 router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
-    const { name, description, totalFee, courseCode, image } = req.body;
+    const { name, description, totalFee, courseCode, image, coverImage } = req.body;
 
     if (!name || !totalFee) return res.status(400).json({ message: 'Name and Total Fee are required' });
     if (!courseCode) return res.status(400).json({ message: 'Course Code is required' });
 
     try {
         const [result] = await pool.query(
-            'INSERT INTO Courses (CourseCode, Name, Description, TotalFee, Image) VALUES (?, ?, ?, ?, ?)',
-            [courseCode, name, description || null, totalFee, image || null]
+            'INSERT INTO Courses (CourseCode, Name, Description, TotalFee, Image, CoverImage) VALUES (?, ?, ?, ?, ?, ?)',
+            [courseCode, name, description || null, totalFee, image || null, coverImage || null]
         );
 
-        res.status(201).json({ id: result.insertId, courseCode, name, description, totalFee, image });
+        res.status(201).json({ id: result.insertId, courseCode, name, description, totalFee, image, coverImage });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ message: `Course Code "${courseCode}" already exists. Please use a unique code.` });
@@ -34,7 +34,7 @@ router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req
 router.get('/public', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt, Image FROM Courses ORDER BY CreatedAt DESC'
+            'SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt, Image, CoverImage FROM Courses ORDER BY CreatedAt DESC'
         );
         res.json(rows);
     } catch (err) {
@@ -50,7 +50,7 @@ router.get('/public/:id', async (req, res) => {
     try {
         const courseId = req.params.id;
         // Fetch course details
-        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt, Image FROM Courses WHERE ID = ?', [courseId]);
+        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Description, TotalFee, CreatedAt, Image, CoverImage FROM Courses WHERE ID = ?', [courseId]);
         
         if (courses.length === 0) {
             return res.status(404).json({ message: 'Course not found' });

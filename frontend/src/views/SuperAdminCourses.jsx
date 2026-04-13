@@ -11,7 +11,7 @@ export default function SuperAdminCourses() {
 
     // Add Course modal
     const [showAddCourse, setShowAddCourse] = useState(false);
-    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', totalFee: '', image: '' });
+    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', totalFee: '', image: '', coverImage: '' });
     const [courseLoading, setCourseLoading] = useState(false);
 
     // Add Batch modal
@@ -57,7 +57,7 @@ export default function SuperAdminCourses() {
                 name: courseForm.name,
                 description: courseForm.description,
                 totalFee: parseFloat(courseForm.totalFee),
-                image: courseForm.image
+                image: courseForm.image, coverImage: courseForm.coverImage
             });
             setCourseForm({ courseCode: '', name: '', description: '', totalFee: '', image: '' });
             setShowAddCourse(false);
@@ -183,6 +183,27 @@ export default function SuperAdminCourses() {
                                 </div>
                             )}
                         </div>
+                                                <div>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length)</label>
+                            <input 
+                                className="form-input" 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={e => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => setCourseForm({ ...courseForm, coverImage: reader.result });
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                            />
+                            {courseForm.coverImage && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }} />
+                                </div>
+                            )}
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
                             <button type="button" className="btn btn-secondary" onClick={() => setShowAddCourse(false)}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={courseLoading}>{courseLoading ? 'Saving...' : 'Create Course'}</button>
@@ -220,6 +241,27 @@ export default function SuperAdminCourses() {
                                 {tutors.length === 0 ? <option disabled>No tutors found – add tutors first</option> : tutors.map(t => <option key={t.ID} value={t.ID}>{t.Name} ({t.Email})</option>)}
                             </select>
                         </div>
+                                                <div>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length)</label>
+                            <input 
+                                className="form-input" 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={e => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => setCourseForm({ ...courseForm, coverImage: reader.result });
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                            />
+                            {courseForm.coverImage && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }} />
+                                </div>
+                            )}
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
                             <button type="button" className="btn btn-secondary" onClick={() => setShowAddBatch(false)}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={batchLoading}>{batchLoading ? 'Saving...' : 'Create Batch'}</button>
@@ -255,6 +297,27 @@ export default function SuperAdminCourses() {
                                 <option value="">Select a new tutor</option>
                                 {tutors.filter(t => t.Name !== changeTutorClass.TutorName).map(t => <option key={t.ID} value={t.ID}>{t.Name} ({t.Email})</option>)}
                             </select>
+                        </div>
+                                                <div>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length)</label>
+                            <input 
+                                className="form-input" 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={e => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => setCourseForm({ ...courseForm, coverImage: reader.result });
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                            />
+                            {courseForm.coverImage && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }} />
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
                             <button type="button" className="btn btn-secondary" onClick={() => { setChangeTutorClass(null); setNewTutorId(''); }}>Cancel</button>
@@ -408,3 +471,4 @@ export default function SuperAdminCourses() {
         </div>
     );
 }
+
