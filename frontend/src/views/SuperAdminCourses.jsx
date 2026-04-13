@@ -2,6 +2,25 @@ import { useEffect, useState } from 'react';
 import { BookOpen, AlertCircle, Plus, X, Users, RefreshCw, Trash2 } from 'lucide-react';
 import api from '../api';
 
+// Compress image to base64 using canvas - keeps under TiDB 6MB row limit
+const compressImage = (file, maxWidth, maxHeight, quality = 0.7) => new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width, h = img.height;
+            if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+            if (h > maxHeight) { w = Math.round(w * maxHeight / h); h = maxHeight; }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+});
+
 export default function SuperAdminCourses() {
     const [courses, setCourses] = useState([]);
     const [classes, setClasses] = useState([]);
@@ -163,44 +182,44 @@ export default function SuperAdminCourses() {
                             <input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required />
                         </div>
                         <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail (Image)</label>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail (Image) <span style={{fontWeight:400,fontSize:'11px'}}>— used in course listing cards</span></label>
                             <input 
                                 className="form-input" 
                                 type="file" 
                                 accept="image/*" 
-                                onChange={e => {
+                                onChange={async e => {
                                     const file = e.target.files[0];
                                     if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => setCourseForm({ ...courseForm, image: reader.result });
-                                        reader.readAsDataURL(file);
+                                        const compressed = await compressImage(file, 800, 500, 0.7);
+                                        setCourseForm(prev => ({ ...prev, image: compressed }));
                                     }
                                 }} 
                             />
                             {courseForm.image && (
                                 <div style={{ marginTop: '10px' }}>
-                                    <img src={courseForm.image} alt="Preview" style={{ width: '100px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                                    <img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} />
+                                    <span style={{fontSize:'11px',color:'var(--text-muted)',marginLeft:'8px'}}>✓ Compressed</span>
                                 </div>
                             )}
                         </div>
-                                                <div>
-                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length)</label>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image (Full Length) <span style={{fontWeight:400,fontSize:'11px'}}>— used on the course detail page</span></label>
                             <input 
                                 className="form-input" 
                                 type="file" 
                                 accept="image/*" 
-                                onChange={e => {
+                                onChange={async e => {
                                     const file = e.target.files[0];
                                     if (file) {
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => setCourseForm({ ...courseForm, coverImage: reader.result });
-                                        reader.readAsDataURL(file);
+                                        const compressed = await compressImage(file, 1200, 400, 0.75);
+                                        setCourseForm(prev => ({ ...prev, coverImage: compressed }));
                                     }
                                 }} 
                             />
                             {courseForm.coverImage && (
                                 <div style={{ marginTop: '10px' }}>
-                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }} />
+                                    <img src={courseForm.coverImage} alt="Preview Cover" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                                    <span style={{fontSize:'11px',color:'var(--text-muted)'}}>✓ Compressed</span>
                                 </div>
                             )}
                         </div>
