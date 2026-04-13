@@ -30,12 +30,12 @@ export default function SuperAdminCourses() {
 
     // Add Course modal
     const [showAddCourse, setShowAddCourse] = useState(false);
-    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '' });
+    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
     const [courseLoading, setCourseLoading] = useState(false);
 
     // Edit Course
     const [showEditCourse, setShowEditCourse] = useState(false);
-    const [editForm, setEditForm] = useState({ id: '', courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '' });
+    const [editForm, setEditForm] = useState({ id: '', courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
     const [editLoading, setEditLoading] = useState(false);
 
     // Add Batch modal
@@ -88,8 +88,11 @@ export default function SuperAdminCourses() {
                 language: courseForm.language,
                 courseOutcome: courseForm.courseOutcome,
                 category: courseForm.category,
+                duration: courseForm.duration,
+                startingDate: courseForm.startingDate,
+                visibility: courseForm.visibility ? 1 : 0
             });
-            setCourseForm({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '' });
+            setCourseForm({ courseCode: '', name: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
             setShowAddCourse(false);
             fetchData();
         } catch (err) {
@@ -116,6 +119,9 @@ export default function SuperAdminCourses() {
                 language: editForm.language,
                 courseOutcome: editForm.courseOutcome,
                 category: editForm.category,
+                duration: editForm.duration,
+                startingDate: editForm.startingDate,
+                visibility: editForm.visibility ? 1 : 0
             });
             setShowEditCourse(false);
             fetchData();
@@ -157,7 +163,7 @@ export default function SuperAdminCourses() {
             setNewTutorId('');
             fetchData();
             const banner = document.createElement('div');
-            banner.textContent = 'Ã¢Å“â€œ Tutor updated successfully';
+            banner.textContent = 'ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Tutor updated successfully';
             Object.assign(banner.style, { position: 'fixed', top: '20px', right: '20px', background: 'var(--primary)', color: '#fff', padding: '12px 20px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' });
             document.body.appendChild(banner);
             setTimeout(() => banner.remove(), 3000);
@@ -189,7 +195,7 @@ export default function SuperAdminCourses() {
     };
 
     const formatDate = (dateStr) => {
-        if (!dateStr) return 'Ã¢â‚¬â€';
+        if (!dateStr) return 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â';
         const d = new Date(dateStr);
         return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
     };
@@ -198,7 +204,7 @@ export default function SuperAdminCourses() {
         return (
             <div className="content-wrapper">
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button onClick={() => setShowAddCourse(false)} className="btn btn-secondary">Ã¢â€ Â Back</button>
+                    <button onClick={() => setShowAddCourse(false)} className="btn btn-secondary">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
                     <h2 className="page-title" style={{ margin: 0 }}>Create New Course</h2>
                 </div>
                 <div className="section-card" style={{ maxWidth: '600px', margin: '0 auto', padding: '32px' }}>
@@ -206,12 +212,17 @@ export default function SuperAdminCourses() {
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Code * <span style={{ fontSize: '11px', fontWeight: 400 }}>(e.g. DS101)</span></label><input className="form-input" placeholder="e.g. DS101, WEB202" value={courseForm.courseCode} onChange={e => setCourseForm({ ...courseForm, courseCode: e.target.value })} style={{ textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }} required /></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Name *</label><input className="form-input" placeholder="e.g. Full Stack Web Development" value={courseForm.name} onChange={e => setCourseForm({ ...courseForm, name: e.target.value })} required /></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Overview</label><textarea className="form-input" placeholder="What is this course about?" value={courseForm.overview} onChange={e => setCourseForm({ ...courseForm, overview: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Target Audience <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” one point per line</span></label><textarea className="form-input" placeholder={"Freshers looking to start their career\nWorking professionals upskilling"} value={courseForm.targetAudience} onChange={e => setCourseForm({ ...courseForm, targetAudience: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Target Audience <span style={{ fontWeight: 400, fontSize: '11px' }}>Ã¢â‚¬â€ one point per line</span></label><textarea className="form-input" placeholder={"Freshers looking to start their career\nWorking professionals upskilling"} value={courseForm.targetAudience} onChange={e => setCourseForm({ ...courseForm, targetAudience: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Skill Level</label><select className="form-input" value={courseForm.skillLevel} onChange={e => setCourseForm({ ...courseForm, skillLevel: e.target.value })}><option value="">Select level</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>All Levels</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Language</label><select className="form-input" value={courseForm.language} onChange={e => setCourseForm({ ...courseForm, language: e.target.value })}><option value="">Select language</option><option>English</option><option>Tamil</option><option>Hindi</option><option>Telugu</option><option>Malayalam</option></select></div></div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” one point per line</span></label><textarea className="form-input" placeholder={"Build real-world projects\nGet job-ready skills\nEarn industry certificate"} value={courseForm.courseOutcome} onChange={e => setCourseForm({ ...courseForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (&#8377;) *</label><input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required /></div></div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 800, 500, 0.7); setCourseForm(prev => ({ ...prev, image: compressed })); } }} />{courseForm.image && (<div style={{ marginTop: '10px' }}><img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed</span></div>)}</div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” course detail page</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 400, 0.75); setCourseForm(prev => ({ ...prev, coverImage: compressed })); } }} />{courseForm.coverImage && (<div style={{ marginTop: '10px' }}><img src={courseForm.coverImage} alt="Cover Preview" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>&#10003; Compressed</span></div>)}</div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome <span style={{ fontWeight: 400, fontSize: '11px' }}>Ã¢â‚¬â€ one point per line</span></label><textarea className="form-input" placeholder={"Build real-world projects\nGet job-ready skills\nEarn industry certificate"} value={courseForm.courseOutcome} onChange={e => setCourseForm({ ...courseForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Duration</label><input className="form-input" placeholder="e.g. 60 Hrs" value={courseForm.duration} onChange={e => setCourseForm({ ...courseForm, duration: e.target.value })} /></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Batch Starting Date</label><input className="form-input" type="date" value={courseForm.startingDate} onChange={e => setCourseForm({ ...courseForm, startingDate: e.target.value })} /></div></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input type="checkbox" id="courseVis" checked={courseForm.visibility} onChange={e => setCourseForm({ ...courseForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <label htmlFor="courseVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (₹) *</label><input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required /></div></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>Ã¢â‚¬â€ card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 800, 500, 0.7); setCourseForm(prev => ({ ...prev, image: compressed })); } }} />{courseForm.image && (<div style={{ marginTop: '10px' }}><img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed</span></div>)}</div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image <span style={{ fontWeight: 400, fontSize: '11px' }}>Ã¢â‚¬â€ course detail page</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 400, 0.75); setCourseForm(prev => ({ ...prev, coverImage: compressed })); } }} />{courseForm.coverImage && (<div style={{ marginTop: '10px' }}><img src={courseForm.coverImage} alt="Cover Preview" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>&#10003; Compressed</span></div>)}</div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}><button type="button" className="btn btn-secondary" onClick={() => setShowAddCourse(false)}>Cancel</button><button type="submit" className="btn btn-primary" disabled={courseLoading}>{courseLoading ? 'Saving...' : 'Create Course'}</button></div>
                     </form>
                 </div>
@@ -234,9 +245,14 @@ export default function SuperAdminCourses() {
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Target Audience</label><textarea className="form-input" value={editForm.targetAudience} onChange={e => setEditForm({ ...editForm, targetAudience: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Skill Level</label><select className="form-input" value={editForm.skillLevel} onChange={e => setEditForm({ ...editForm, skillLevel: e.target.value })}><option value="">Select level</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>All Levels</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Language</label><select className="form-input" value={editForm.language} onChange={e => setEditForm({ ...editForm, language: e.target.value })}><option value="">Select language</option><option>English</option><option>Tamil</option><option>Hindi</option><option>Telugu</option><option>Malayalam</option></select></div></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome</label><textarea className="form-input" value={editForm.courseOutcome} onChange={e => setEditForm({ ...editForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (&#8377;) *</label><input className="form-input" type="number" min="0" value={editForm.totalFee} onChange={e => setEditForm({ ...editForm, totalFee: e.target.value })} required /></div></div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>— card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 800, 500, 0.7); setEditForm(prev => ({ ...prev, image: compressed })); } }} />{editForm.image && (<div style={{ marginTop: '10px' }}><img src={editForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed (New selection)</span></div>)}{!editForm.image && (<div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Leave empty to keep existing image.</div>)}</div>
-                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image <span style={{ fontWeight: 400, fontSize: '11px' }}>— course detail page</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 400, 0.75); setEditForm(prev => ({ ...prev, coverImage: compressed })); } }} />{editForm.coverImage && (<div style={{ marginTop: '10px' }}><img src={editForm.coverImage} alt="Cover Preview" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>&#10003; Compressed (New selection)</span></div>)}{!editForm.coverImage && (<div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Leave empty to keep existing image.</div>)}</div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Duration</label><input className="form-input" placeholder="e.g. 60 Hrs" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} /></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Batch Starting Date</label><input className="form-input" type="date" value={editForm.startingDate} onChange={e => setEditForm({ ...editForm, startingDate: e.target.value })} /></div></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input type="checkbox" id="editVis" checked={editForm.visibility} onChange={e => setEditForm({ ...editForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <label htmlFor="editVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (₹) *</label><input className="form-input" type="number" min="0" value={editForm.totalFee} onChange={e => setEditForm({ ...editForm, totalFee: e.target.value })} required /></div></div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 800, 500, 0.7); setEditForm(prev => ({ ...prev, image: compressed })); } }} />{editForm.image && (<div style={{ marginTop: '10px' }}><img src={editForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed (New selection)</span></div>)}{!editForm.image && (<div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Leave empty to keep existing image.</div>)}</div>
+                        <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Large Cover Image <span style={{ fontWeight: 400, fontSize: '11px' }}>â€” course detail page</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 400, 0.75); setEditForm(prev => ({ ...prev, coverImage: compressed })); } }} />{editForm.coverImage && (<div style={{ marginTop: '10px' }}><img src={editForm.coverImage} alt="Cover Preview" style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>&#10003; Compressed (New selection)</span></div>)}{!editForm.coverImage && (<div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Leave empty to keep existing image.</div>)}</div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}><button type="button" className="btn btn-secondary" onClick={() => setShowEditCourse(false)}>Cancel</button><button type="submit" className="btn btn-primary" disabled={editLoading}>{editLoading ? 'Saving...' : 'Update Course'}</button></div>
                     </form>
                 </div>
@@ -248,7 +264,7 @@ export default function SuperAdminCourses() {
         return (
             <div className="content-wrapper">
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button onClick={() => setShowAddBatch(false)} className="btn btn-secondary">Ã¢â€ Â Back</button>
+                    <button onClick={() => setShowAddBatch(false)} className="btn btn-secondary">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
                     <h2 className="page-title" style={{ margin: 0 }}>Create New Batch</h2>
                 </div>
                 <div className="section-card" style={{ maxWidth: '600px', margin: '0 auto', padding: '32px' }}>
@@ -262,13 +278,13 @@ export default function SuperAdminCourses() {
                         </div>
                         <div>
                             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Batch Name *</label>
-                            <input className="form-input" placeholder="e.g. Batch A Ã¢â‚¬â€œ Jan 2025" value={batchForm.batchName} onChange={e => setBatchForm({ ...batchForm, batchName: e.target.value })} required />
+                            <input className="form-input" placeholder="e.g. Batch A ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ Jan 2025" value={batchForm.batchName} onChange={e => setBatchForm({ ...batchForm, batchName: e.target.value })} required />
                         </div>
                         <div>
                             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Assign Tutor *</label>
                             <select className="form-input" value={batchForm.tutorId} onChange={e => setBatchForm({ ...batchForm, tutorId: e.target.value })} required>
                                 <option value="">Select a Tutor</option>
-                                {tutors.length === 0 ? <option disabled>No tutors found Ã¢â‚¬â€œ add tutors first</option> : tutors.map(t => <option key={t.ID} value={t.ID}>{t.Name} ({t.Email})</option>)}
+                                {tutors.length === 0 ? <option disabled>No tutors found ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ add tutors first</option> : tutors.map(t => <option key={t.ID} value={t.ID}>{t.Name} ({t.Email})</option>)}
                             </select>
                         </div>
                                                 <div>
@@ -306,7 +322,7 @@ export default function SuperAdminCourses() {
         return (
             <div className="content-wrapper">
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button onClick={() => { setChangeTutorClass(null); setNewTutorId(''); }} className="btn btn-secondary">Ã¢â€ Â Back</button>
+                    <button onClick={() => { setChangeTutorClass(null); setNewTutorId(''); }} className="btn btn-secondary">ÃƒÂ¢Ã¢â‚¬Â Ã‚Â Back</button>
                     <h2 className="page-title" style={{ margin: 0 }}>Change Tutor</h2>
                 </div>
                 <div className="section-card" style={{ maxWidth: '600px', margin: '0 auto', padding: '32px' }}>
@@ -369,7 +385,7 @@ export default function SuperAdminCourses() {
             )}
 
             <div className="grid-2">
-                {/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Courses Panel Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
+                {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Courses Panel ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
                 <div className="section-card">
                     <div className="section-header">
                         <h2 className="section-title">
@@ -401,11 +417,11 @@ export default function SuperAdminCourses() {
                                         <tr key={c.ID}>
                                             <td>
                                                 <span style={{ background: 'var(--primary-light, #e8f5ee)', color: 'var(--primary)', fontWeight: 700, fontSize: '12px', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.5px' }}>
-                                                    {c.CourseCode || 'Ã¢â‚¬â€'}
+                                                    {c.CourseCode || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}
                                                 </span>
                                             </td>
                                             <td><strong>{c.Name}</strong></td>
-                                            <td><strong style={{ color: 'var(--primary)' }}>Ã¢â€šÂ¹{Number(c.TotalFee).toLocaleString()}</strong></td>
+                                            <td><strong style={{ color: 'var(--primary)' }}>{'\u20B9'}{Number(c.TotalFee).toLocaleString()}</strong></td>
                                             <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{formatDate(c.CreatedAt)}</td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <button 
@@ -422,7 +438,10 @@ export default function SuperAdminCourses() {
                                                             skillLevel: c.SkillLevel || '',
                                                             language: c.Language || '',
                                                             courseOutcome: c.CourseOutcome || '',
-                                                            category: c.Category || ''
+                                                            category: c.Category || '',
+                                                            duration: c.Duration || '',
+                                                            startingDate: c.StartingDate || '',
+                                                            visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
                                                     }}
@@ -449,7 +468,7 @@ export default function SuperAdminCourses() {
                     </div>
                 </div>
 
-                {/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Class Batches Panel Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
+                {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Class Batches Panel ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
                 <div className="section-card">
                     <div className="section-header">
                         <h2 className="section-title">
@@ -491,7 +510,7 @@ export default function SuperAdminCourses() {
                                                     <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--primary-light, #e8f5ee)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 700, fontSize: '11px', flexShrink: 0 }}>
                                                         {(c.TutorName || 'U').charAt(0).toUpperCase()}
                                                     </span>
-                                                    {c.TutorName || 'Ã¢â‚¬â€'}
+                                                    {c.TutorName || 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'}
                                                 </span>
                                             </td>
                                             <td>
@@ -509,7 +528,10 @@ export default function SuperAdminCourses() {
                                                             skillLevel: c.SkillLevel || '',
                                                             language: c.Language || '',
                                                             courseOutcome: c.CourseOutcome || '',
-                                                            category: c.Category || ''
+                                                            category: c.Category || '',
+                                                            duration: c.Duration || '',
+                                                            startingDate: c.StartingDate || '',
+                                                            visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
                                                     }}
@@ -539,7 +561,10 @@ export default function SuperAdminCourses() {
                                                             skillLevel: c.SkillLevel || '',
                                                             language: c.Language || '',
                                                             courseOutcome: c.CourseOutcome || '',
-                                                            category: c.Category || ''
+                                                            category: c.Category || '',
+                                                            duration: c.Duration || '',
+                                                            startingDate: c.StartingDate || '',
+                                                            visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
                                                     }}
