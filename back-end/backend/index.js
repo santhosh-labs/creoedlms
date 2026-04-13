@@ -15,7 +15,8 @@ connectDB();
 
 // Init Middleware
 app.set('trust proxy', 1); // Trust first proxy (Hugging Face / Vercel)
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors()); // Allow all origins for Vercel/Spaces connectivity
 // Serve uploaded files (chat images, etc.) as static assets
 app.use('/uploads', express.static(require('path').join(__dirname, 'uploads')));
