@@ -11,7 +11,7 @@ export default function SuperAdminCourses() {
 
     // Add Course modal
     const [showAddCourse, setShowAddCourse] = useState(false);
-    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', totalFee: '' });
+    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', totalFee: '', image: '' });
     const [courseLoading, setCourseLoading] = useState(false);
 
     // Add Batch modal
@@ -57,8 +57,9 @@ export default function SuperAdminCourses() {
                 name: courseForm.name,
                 description: courseForm.description,
                 totalFee: parseFloat(courseForm.totalFee),
+                image: courseForm.image
             });
-            setCourseForm({ courseCode: '', name: '', description: '', totalFee: '' });
+            setCourseForm({ courseCode: '', name: '', description: '', totalFee: '', image: '' });
             setShowAddCourse(false);
             fetchData();
         } catch (err) {
@@ -160,6 +161,27 @@ export default function SuperAdminCourses() {
                         <div>
                             <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (₹) *</label>
                             <input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail (Image)</label>
+                            <input 
+                                className="form-input" 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={e => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => setCourseForm({ ...courseForm, image: reader.result });
+                                        reader.readAsDataURL(file);
+                                    }
+                                }} 
+                            />
+                            {courseForm.image && (
+                                <div style={{ marginTop: '10px' }}>
+                                    <img src={courseForm.image} alt="Preview" style={{ width: '100px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                                </div>
+                            )}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
                             <button type="button" className="btn btn-secondary" onClick={() => setShowAddCourse(false)}>Cancel</button>
