@@ -57,23 +57,23 @@ router.get('/public/:id', async (req, res) => {
         }
         const course = courses[0];
 
-        // Fetch curriculum (we'll fetch modules and lessons from one representative class for this course, e.g. the first one)
+        // Fetch first class for this course (for curriculum display)
         const [classes] = await pool.query(`
-            SELECT c.ID, u.FirstName, u.LastName 
+            SELECT c.ID, u.Name as TutorName
             FROM Classes c 
             LEFT JOIN Users u ON c.TutorID = u.ID 
             WHERE c.CourseID = ? LIMIT 1
         `, [courseId]);
+
         let modulesData = [];
-        let tutorName = 'Instructor';
+        let tutorName = null;
         let totalLessons = 0;
         
         if (classes.length > 0) {
             const classInfo = classes[0];
             const classId = classInfo.ID;
-            if (classInfo.FirstName || classInfo.LastName) {
-                tutorName = `${classInfo.FirstName || ''} ${classInfo.LastName || ''}`.trim();
-            }
+            tutorName = classInfo.TutorName || null;
+
             const [modules] = await pool.query('SELECT ID, Title, Description FROM Modules WHERE ClassID = ?', [classId]);
             const [lessons] = await pool.query(`
                 SELECT l.ID, l.ModuleID, l.Title, l.Type 
@@ -85,12 +85,25 @@ router.get('/public/:id', async (req, res) => {
             modulesData = modules.map(mod => {
                 const moduleLessons = lessons.filter(l => l.ModuleID === mod.ID);
                 totalLessons += moduleLessons.length;
-                return {
-                    ...mod,
-                    lessons: moduleLessons
-                };
+                return { ...mod, lessons: moduleLessons };
             });
+
+            // If no lessons found, count modules as a fallback
+            if (totalLessons === 0 && modules.length > 0) {
+                totalLessons = modules.length;
+            }
         }
+
+        // Also count total lessons across ALL classes for this course for accuracy
+        const [lessonCountResult] = await pool.query(`
+            SELECT COUNT(l.ID) as total
+            FROM Lessons l
+            JOIN Modules m ON l.ModuleID = m.ID
+            JOIN Classes c ON m.ClassID = c.ID
+            WHERE c.CourseID = ?
+        `, [courseId]);
+        const dbLessonCount = lessonCountResult[0]?.total || 0;
+        if (dbLessonCount > 0) totalLessons = dbLessonCount;
 
         course.curriculum = modulesData;
         course.TutorName = tutorName;
