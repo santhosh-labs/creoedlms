@@ -440,7 +440,7 @@ export default function SuperAdminCourses() {
                                                             courseOutcome: c.CourseOutcome || '',
                                                             category: c.Category || '',
                                                             duration: c.Duration || '',
-                                                            startingDate: c.StartingDate || '',
+                                                            startingDate: c.StartingDate ? c.StartingDate.split('T')[0] : '',
                                                             visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
@@ -530,7 +530,7 @@ export default function SuperAdminCourses() {
                                                             courseOutcome: c.CourseOutcome || '',
                                                             category: c.Category || '',
                                                             duration: c.Duration || '',
-                                                            startingDate: c.StartingDate || '',
+                                                            startingDate: c.StartingDate ? c.StartingDate.split('T')[0] : '',
                                                             visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
@@ -563,7 +563,7 @@ export default function SuperAdminCourses() {
                                                             courseOutcome: c.CourseOutcome || '',
                                                             category: c.Category || '',
                                                             duration: c.Duration || '',
-                                                            startingDate: c.StartingDate || '',
+                                                            startingDate: c.StartingDate ? c.StartingDate.split('T')[0] : '',
                                                             visibility: c.Visibility !== 0
                                                         });
                                                         setShowEditCourse(true);
