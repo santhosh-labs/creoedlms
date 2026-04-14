@@ -57,12 +57,13 @@ router.get('/public/:id', async (req, res) => {
         }
         const course = courses[0];
 
-        // Fetch first class for this course (for curriculum display)
+        // Fetch most recent class for this course (for curriculum display)
         const [classes] = await pool.query(`
             SELECT c.ID, u.Name as TutorName
             FROM Classes c 
             LEFT JOIN Users u ON c.TutorID = u.ID 
-            WHERE c.CourseID = ? LIMIT 1
+            WHERE c.CourseID = ?
+            ORDER BY c.ID DESC LIMIT 1
         `, [courseId]);
 
         let modulesData = [];

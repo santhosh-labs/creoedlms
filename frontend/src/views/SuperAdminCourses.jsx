@@ -111,6 +111,7 @@ export default function SuperAdminCourses() {
             await api.put(/courses/ + editForm.id, {
                 courseCode: (editForm.courseCode || '').toUpperCase().trim(),
                 name: editForm.name,
+                description: editForm.description,
                 overview: editForm.overview,
                 totalFee: parseFloat(editForm.totalFee),
                 image: editForm.image || undefined,
@@ -433,6 +434,7 @@ export default function SuperAdminCourses() {
                                                             id: c.ID,
                                                             courseCode: c.CourseCode || '',
                                                             name: c.Name || '',
+                                                            description: c.Description || '',
                                                             overview: c.Overview || '',
                                                             totalFee: c.TotalFee || '',
                                                             image: c.Image || '',
