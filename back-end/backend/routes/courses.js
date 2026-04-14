@@ -7,18 +7,18 @@ const { pool } = require('../config/db');
 // @desc    Create a new course
 // @access  Private (Admin, Super Admin)
 router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
-    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate } = req.body;
+    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate, description } = req.body;
 
     if (!name || !totalFee) return res.status(400).json({ message: 'Name and Total Fee are required' });
     if (!courseCode) return res.status(400).json({ message: 'Course Code is required' });
 
     try {
         const [result] = await pool.query(
-            'INSERT INTO Courses (CourseCode, Name, Overview, TotalFee, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Visibility, Duration, StartingDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [courseCode, name, overview || null, totalFee, image || null, coverImage || null, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null, visibility !== undefined ? visibility : 1, duration || null, startingDate || null]
+            'INSERT INTO Courses (CourseCode, Name, Overview, TotalFee, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Visibility, Duration, StartingDate, Description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [courseCode, name, overview || null, totalFee, image || null, coverImage || null, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null, visibility !== undefined ? visibility : 1, duration || null, startingDate || null, description || null]
         );
 
-        res.status(201).json({ id: result.insertId, courseCode, name, overview, totalFee, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate });
+        res.status(201).json({ id: result.insertId, courseCode, name, overview, totalFee, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate, description });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
             return res.status(400).json({ message: `Course Code "${courseCode}" already exists. Please use a unique code.` });
@@ -34,7 +34,7 @@ router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req
 router.get('/public', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE Visibility = 1 OR Visibility IS NULL ORDER BY CreatedAt DESC'
+            'SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE Visibility = 1 OR Visibility IS NULL ORDER BY CreatedAt DESC'
         );
         res.json(rows);
     } catch (err) {
@@ -50,7 +50,7 @@ router.get('/public/:id', async (req, res) => {
     try {
         const courseId = req.params.id;
         // Fetch course details
-        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE ID = ? AND (Visibility = 1 OR Visibility IS NULL)', [courseId]);
+        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE ID = ? AND (Visibility = 1 OR Visibility IS NULL)', [courseId]);
         
         if (courses.length === 0) {
             return res.status(404).json({ message: 'Course not found' });
@@ -58,11 +58,22 @@ router.get('/public/:id', async (req, res) => {
         const course = courses[0];
 
         // Fetch curriculum (we'll fetch modules and lessons from one representative class for this course, e.g. the first one)
-        const [classes] = await pool.query('SELECT ID FROM Classes WHERE CourseID = ? LIMIT 1', [courseId]);
+        const [classes] = await pool.query(`
+            SELECT c.ID, u.FirstName, u.LastName 
+            FROM Classes c 
+            LEFT JOIN Users u ON c.TutorID = u.ID 
+            WHERE c.CourseID = ? LIMIT 1
+        `, [courseId]);
         let modulesData = [];
+        let tutorName = 'Instructor';
+        let totalLessons = 0;
         
         if (classes.length > 0) {
-            const classId = classes[0].ID;
+            const classInfo = classes[0];
+            const classId = classInfo.ID;
+            if (classInfo.FirstName || classInfo.LastName) {
+                tutorName = `${classInfo.FirstName || ''} ${classInfo.LastName || ''}`.trim();
+            }
             const [modules] = await pool.query('SELECT ID, Title, Description FROM Modules WHERE ClassID = ?', [classId]);
             const [lessons] = await pool.query(`
                 SELECT l.ID, l.ModuleID, l.Title, l.Type 
@@ -71,13 +82,19 @@ router.get('/public/:id', async (req, res) => {
                 WHERE m.ClassID = ?
             `, [classId]);
 
-            modulesData = modules.map(mod => ({
-                ...mod,
-                lessons: lessons.filter(l => l.ModuleID === mod.ID)
-            }));
+            modulesData = modules.map(mod => {
+                const moduleLessons = lessons.filter(l => l.ModuleID === mod.ID);
+                totalLessons += moduleLessons.length;
+                return {
+                    ...mod,
+                    lessons: moduleLessons
+                };
+            });
         }
 
         course.curriculum = modulesData;
+        course.TutorName = tutorName;
+        course.TotalLessons = totalLessons;
         res.json(course);
     } catch (err) {
         console.error('[Public Course Details]', err);
@@ -90,7 +107,7 @@ router.get('/public/:id', async (req, res) => {
 // @access  Private
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Visibility, Duration, StartingDate FROM Courses ORDER BY CreatedAt DESC');
+        const [rows] = await pool.query('SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Visibility, Duration, StartingDate FROM Courses ORDER BY CreatedAt DESC');
         res.json(rows);
     } catch (err) {
         res.status(500).send('Server Error');
@@ -101,15 +118,15 @@ router.get('/', verifyToken, async (req, res) => {
 // @desc    Update an existing course
 // @access  Private (Admin, Super Admin)
 router.put('/:id', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
-    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate } = req.body;
+    const { name, overview, totalFee, courseCode, image, coverImage, targetAudience, skillLevel, language, courseOutcome, category, visibility, duration, startingDate, description } = req.body;
     const courseId = req.params.id;
 
     if (!name || !totalFee) return res.status(400).json({ message: 'Name and Total Fee are required' });
 
     try {
         await pool.query(
-            'UPDATE Courses SET CourseCode=?, Name=?, Overview=?, TotalFee=?, TargetAudience=?, SkillLevel=?, Language=?, CourseOutcome=?, Category=?, Visibility=?, Duration=?, StartingDate=?, Image=COALESCE(?,Image), CoverImage=COALESCE(?,CoverImage) WHERE ID=?',
-            [courseCode, name, overview || null, totalFee, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null, visibility !== undefined ? visibility : 1, duration || null, startingDate || null, image || null, coverImage || null, courseId]
+            'UPDATE Courses SET CourseCode=?, Name=?, Overview=?, Description=?, TotalFee=?, TargetAudience=?, SkillLevel=?, Language=?, CourseOutcome=?, Category=?, Visibility=?, Duration=?, StartingDate=?, Image=COALESCE(?,Image), CoverImage=COALESCE(?,CoverImage) WHERE ID=?',
+            [courseCode, name, overview || null, description || null, totalFee, targetAudience || null, skillLevel || null, language || null, courseOutcome || null, category || null, visibility !== undefined ? visibility : 1, duration || null, startingDate || null, image || null, coverImage || null, courseId]
         );
         res.json({ message: 'Course updated successfully' });
     } catch (err) {
