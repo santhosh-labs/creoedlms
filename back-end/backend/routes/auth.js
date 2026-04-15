@@ -256,11 +256,13 @@ router.get('/activate/:token', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT ID FROM Users WHERE ActivationToken = ? AND IsActive = 0', [token]);
         if (rows.length === 0) {
-            return res.send('<h2>Invalid or expired link. Your account may already be activated.</h2><a href="https://creoed.com/login">Go to Login</a>');
+            const websiteUrl = process.env.WEBSITE_URL || 'https://creoed.com';
+            return res.send(`<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2 style="color:#7c3aed">Already Active!</h2><p>Your account may already be activated or this link has expired.</p><a href="${websiteUrl}/login" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Go to Login</a></body></html>`);
         }
         
         await pool.query('UPDATE Users SET IsActive = 1, ActivationToken = NULL WHERE ID = ?', [rows[0].ID]);
-        res.redirect('https://creoed.com/login?activated=true');
+        const websiteUrl = process.env.WEBSITE_URL || 'https://creoed.com';
+        res.redirect(`${websiteUrl}/login?activated=true`);
     } catch (err) {
         console.error('Activation Error:', err);
         res.status(500).send('Server Error during activation.');
