@@ -143,7 +143,7 @@ router.post('/verify', verifyToken, async (req, res) => {
         }
     } catch (err) {
         console.error('Error verifying payment:', err);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: 'Internal Server Error', error: err.message, stack: err.stack });
     }
 });
 
