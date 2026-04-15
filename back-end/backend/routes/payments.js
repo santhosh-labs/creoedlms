@@ -8,10 +8,18 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Initialize Razorpay only if keys are present (prevents crash on startup)
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+    try {
+        razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+    } catch (e) {
+        console.error("Failed to initialize Razorpay:", e);
+    }
+}
 
 // @route   POST api/payments/create-order
 // @desc    Calculate fee and create Razorpay order for an authenticated student
@@ -20,6 +28,10 @@ router.post('/create-order', verifyToken, async (req, res) => {
     try {
         const { courseId } = req.body;
         const studentId = req.user.id;
+
+        if (!razorpay) {
+            return res.status(500).json({ message: 'Payment gateway not configured on server (Missing Keys)' });
+        }
 
         // Fetch course details
         const [courseRows] = await pool.query('SELECT ID, Name, TotalFee FROM Courses WHERE ID = ?', [courseId]);
