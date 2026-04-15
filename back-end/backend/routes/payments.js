@@ -129,7 +129,17 @@ router.post('/verify', verifyToken, async (req, res) => {
 
             res.json({ success: true, message: 'Payment verified and course assigned.' });
         } else {
-            res.status(400).json({ success: false, message: 'Payment verification failed' });
+            res.status(400).json({ 
+                success: false, 
+                message: 'Payment verification failed',
+                debug: {
+                    expected: expectedSignature,
+                    received: razorpay_signature,
+                    order_id: razorpay_order_id,
+                    payment_id: razorpay_payment_id,
+                    secretUsed: RAZORPAY_KEY_SECRET.substring(0, 4) + '...'
+                }
+            });
         }
     } catch (err) {
         console.error('Error verifying payment:', err);
