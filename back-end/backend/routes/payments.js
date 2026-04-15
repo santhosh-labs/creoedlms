@@ -108,7 +108,7 @@ router.post('/verify', verifyToken, async (req, res) => {
             if (process.env.RESEND_API_KEY) {
                 try {
                     await resend.emails.send({
-                        from: 'Creoed <onboarding@resend.dev>',
+                        from: 'Creoed <no-reply@creoed.com>',
                         to: user.Email,
                         subject: `You're enrolled! Welcome to ${course.Name}`,
                         html: `

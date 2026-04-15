@@ -102,7 +102,7 @@ router.post('/resend-activation', async (req, res) => {
         if (resend) {
             try {
                 const result = await resend.emails.send({
-                    from: 'Creoed <onboarding@resend.dev>',
+                    from: 'Creoed <no-reply@creoed.com>',
                     to: email,
                     subject: 'Activate your Creoed account',
                     html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
@@ -160,7 +160,7 @@ router.post('/public-register', async (req, res) => {
 
         const [insertResult] = await connection.query(
             `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName, IsActive, ActivationToken) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
             [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null, activationToken]
         );
         const newUserId = insertResult.insertId;
@@ -197,10 +197,21 @@ router.post('/public-register', async (req, res) => {
             const activationLink = `${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/${activationToken}`;
             try {
                 const emailResult = await resend.emails.send({
-                    from: 'Creoed <onboarding@resend.dev>',
+                    from: 'Creoed <no-reply@creoed.com>',
                     to: email,
                     subject: 'Activate your Creoed account',
-                    html: `<h2>Welcome to Creoed!</h2><p>Hi ${name},</p><p>Please activate your account by clicking the link below:</p><p><a href="${activationLink}" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Activate My Account</a></p><p>Or copy this link: ${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>`
+                    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px">
+                        <h2 style="color:#7c3aed">Welcome to Creoed!</h2>
+                        <p>Hi ${name},</p>
+                        <p>Thank you for signing up! Please activate your account by clicking the button below:</p>
+                        <p style="text-align:center;margin:30px 0">
+                            <a href="${activationLink}" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px">
+                                Activate My Account
+                            </a>
+                        </p>
+                        <p style="color:#64748b;font-size:0.9rem">Or copy this link: <a href="${activationLink}">${activationLink}</a></p>
+                        <p>Happy Learning!<br><strong>The Creoed Team</strong></p>
+                    </div>`
                 });
                 console.log('Activation email sent:', emailResult);
             } catch (err) { console.error('Failed sending activation email:', JSON.stringify(err)); }
@@ -294,7 +305,7 @@ router.post('/forgot-password', async (req, res) => {
         const logoContent = fs.existsSync(logoPath) ? fs.readFileSync(logoPath) : null;
 
         const emailData = {
-            from: 'Creoed <onboarding@resend.dev>',
+            from: 'Creoed <no-reply@creoed.com>',
             to: email,
             subject: 'Reset your Creoed LMS password',
             text: `Hello ${user.Name},\n\nA request has been received to change the password for your Creoed LMS account.\n\nReset your password here: ${resetLink}\n\nIf you did not initiate this request, please contact support@creoed.com.\n\nThank you,\nCreoed Team`,
