@@ -80,6 +80,58 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// @route   POST api/auth/resend-activation
+// @desc    Resend the account activation email
+// @access  Public
+router.post('/resend-activation', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+    try {
+        const [rows] = await pool.query('SELECT ID, Name, IsActive, ActivationToken FROM Users WHERE Email = ?', [email]);
+        if (rows.length === 0) return res.json({ message: 'If that email is registered, a new activation link has been sent.' });
+        
+        const user = rows[0];
+        if (user.IsActive) return res.json({ message: 'Your account is already active. Please log in.' });
+        
+        // Generate new token
+        const newToken = crypto.randomBytes(32).toString('hex');
+        await pool.query('UPDATE Users SET ActivationToken = ? WHERE ID = ?', [newToken, user.ID]);
+        
+        const activationLink = `${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/${newToken}`;
+        
+        if (resend) {
+            try {
+                const result = await resend.emails.send({
+                    from: 'Creoed <onboarding@resend.dev>',
+                    to: email,
+                    subject: 'Activate your Creoed account',
+                    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto">
+                        <h2 style="color:#7c3aed">Activate Your Account</h2>
+                        <p>Hi ${user.Name},</p>
+                        <p>Here is your new activation link. Click the button below to activate your Creoed account:</p>
+                        <p style="text-align:center;margin:30px 0">
+                            <a href="${activationLink}" style="background:#7c3aed;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px">
+                                Activate My Account
+                            </a>
+                        </p>
+                        <p style="color:#64748b;font-size:0.9rem">Or copy this link: <br><a href="${activationLink}">${activationLink}</a></p>
+                        <p>Happy Learning!<br><strong>The Creoed Team</strong></p>
+                    </div>`
+                });
+                console.log('Resent activation email:', result);
+            } catch (mailErr) {
+                console.error('Failed to resend activation email:', JSON.stringify(mailErr));
+                return res.status(500).json({ message: 'Email sending failed. Please contact support.' });
+            }
+        }
+        
+        res.json({ message: 'A new activation link has been sent to your email!' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   POST api/auth/public-register
 // @desc    Public endpoint for student registration from the marketing website
 // @access  Public
