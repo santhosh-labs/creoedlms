@@ -8,17 +8,18 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Initialize Razorpay only if keys are present (prevents crash on startup)
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_SdjnELA2TtsrD7';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '9R8yO8S2VUxuLygTpJJFsbnm';
+
+// Initialize Razorpay natively
 let razorpay = null;
-if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    try {
-        razorpay = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID,
-            key_secret: process.env.RAZORPAY_KEY_SECRET,
-        });
-    } catch (e) {
-        console.error("Failed to initialize Razorpay:", e);
-    }
+try {
+    razorpay = new Razorpay({
+        key_id: RAZORPAY_KEY_ID,
+        key_secret: RAZORPAY_KEY_SECRET,
+    });
+} catch (e) {
+    console.error("Failed to initialize Razorpay:", e);
 }
 
 // @route   POST api/payments/create-order
@@ -55,7 +56,7 @@ router.post('/create-order', verifyToken, async (req, res) => {
             currency: "INR",
             courseName: course.Name,
             userEmail: req.user.email,
-            key: process.env.RAZORPAY_KEY_ID
+            key: RAZORPAY_KEY_ID
         });
     } catch (err) {
         console.error('Error creating Razorpay order:', err);
@@ -73,7 +74,7 @@ router.post('/verify', verifyToken, async (req, res) => {
         const studentId = req.user.id;
 
         const body = razorpay_order_id + "|" + razorpay_payment_id;
-        const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        const expectedSignature = crypto.createHmac('sha256', RAZORPAY_KEY_SECRET)
                                         .update(body.toString())
                                         .digest('hex');
 
