@@ -9,7 +9,11 @@ const { Resend } = require('resend');
 const fs = require('fs');
 const path = require('path');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_33vnJG4v_7rRJbG6JJ698zrehX27Y3yn3';
+let resend = null;
+if (RESEND_API_KEY) {
+    resend = new Resend(RESEND_API_KEY);
+}
 
 // @route   POST api/auth/login
 // @desc    Authenticate user & get token — accepts email OR studentCode
@@ -136,7 +140,7 @@ router.post('/public-register', async (req, res) => {
         await connection.commit();
 
         // Send check your email activation
-        if (process.env.RESEND_API_KEY) {
+        if (resend) {
             // Determine host from environment, default to production website
             const activationLink = `${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/${activationToken}`;
             try {
@@ -297,7 +301,7 @@ router.post('/forgot-password', async (req, res) => {
             }] : []
         };
 
-        if (!process.env.RESEND_API_KEY) {
+        if (!RESEND_API_KEY) {
             console.error('Email not sent: RESEND_API_KEY not configured in .env');
             // Still return success but log the reset link in the terminal
             console.log('🔗 RESET LINK (copy this):', resetLink);
