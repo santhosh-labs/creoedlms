@@ -4,6 +4,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { verifyToken } = require('../middleware/auth');
+const crypto = require('crypto');
+const { Resend } = require('resend');
+const fs = require('fs');
+const path = require('path');
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // @route   POST api/auth/login
 // @desc    Authenticate user & get token — accepts email OR studentCode
@@ -18,7 +24,7 @@ router.post('/login', async (req, res) => {
     try {
         // Allow login via Email OR StudentCode
         const [rows] = await pool.query(`
-            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.PasswordHash, u.RoleID, r.RoleName
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.PasswordHash, u.RoleID, u.IsActive, r.RoleName
             FROM Users u
             JOIN Roles r ON u.RoleID = r.ID
             WHERE u.Email = ? OR u.StudentCode = ?
@@ -33,6 +39,10 @@ router.post('/login', async (req, res) => {
 
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        if (user.IsActive === 0) {
+            return res.status(403).json({ message: 'Please verify your email address to activate your account. Check your inbox.' });
         }
 
         const payload = {
@@ -90,10 +100,12 @@ router.post('/public-register', async (req, res) => {
 
         await connection.beginTransaction();
 
+        const activationToken = crypto.randomBytes(32).toString('hex');
+
         const [insertResult] = await connection.query(
-            `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null]
+            `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName, IsActive, ActivationToken) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+            [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null, activationToken]
         );
         const newUserId = insertResult.insertId;
 
@@ -123,7 +135,21 @@ router.post('/public-register', async (req, res) => {
 
         await connection.commit();
 
-        res.status(201).json({ message: 'Registration successful', studentCode: userCode });
+        // Send check your email activation
+        if (process.env.RESEND_API_KEY) {
+            // Determine host from environment, default to production website
+            const activationLink = \`\${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/\${activationToken}\`;
+            try {
+                await resend.emails.send({
+                    from: 'Creoed <no-reply@creoed.com>',
+                    to: email,
+                    subject: 'Activate your Creoed account',
+                    html: \`<h2>Welcome to Creoed!</h2><p>Hi \${name},</p><p>Please activate your account by clicking the link below:</p><a href="\${activationLink}">Activate My Account</a><p>Or visit: \${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>\`
+                });
+            } catch (err) { console.error('Failed sending activation:', err); }
+        }
+
+        res.status(201).json({ message: 'Registration successful. Check your email to activate your account!', studentCode: userCode });
     } catch (err) {
         await connection.rollback();
         console.error(err);
@@ -154,13 +180,24 @@ router.get('/me', verifyToken, async (req, res) => {
     }
 });
 
-const crypto = require('crypto');
-const { Resend } = require('resend');
-const fs = require('fs');
-const path = require('path');
-
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// @route   GET api/auth/activate/:token
+// @desc    Activate account via email link
+// @access  Public
+router.get('/activate/:token', async (req, res) => {
+    const { token } = req.params;
+    try {
+        const [rows] = await pool.query('SELECT ID FROM Users WHERE ActivationToken = ? AND IsActive = 0', [token]);
+        if (rows.length === 0) {
+            return res.send('<h2>Invalid or expired link. Your account may already be activated.</h2><a href="https://creoed.com/login">Go to Login</a>');
+        }
+        
+        await pool.query('UPDATE Users SET IsActive = 1, ActivationToken = NULL WHERE ID = ?', [rows[0].ID]);
+        res.redirect('https://creoed.com/login?activated=true');
+    } catch (err) {
+        console.error('Activation Error:', err);
+        res.status(500).send('Server Error during activation.');
+    }
+});
 
 // Resend initialization is done above. No verify() needed like nodemailer.
 

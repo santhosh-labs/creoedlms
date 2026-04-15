@@ -39,6 +39,7 @@ app.use('/api/backup', require('./routes/backup'));
 app.use('/api/coupons', require('./routes/coupons'));
 app.use('/api/contact', require('./routes/contact'));
 app.use('/api/subscribe', require('./routes/subscribe'));
+app.use('/api/payments', require('./routes/payments'));
 
 
 
