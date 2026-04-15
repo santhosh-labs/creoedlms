@@ -138,13 +138,13 @@ router.post('/public-register', async (req, res) => {
         // Send check your email activation
         if (process.env.RESEND_API_KEY) {
             // Determine host from environment, default to production website
-            const activationLink = \`\${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/\${activationToken}\`;
+            const activationLink = `${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/${activationToken}`;
             try {
                 await resend.emails.send({
                     from: 'Creoed <no-reply@creoed.com>',
                     to: email,
                     subject: 'Activate your Creoed account',
-                    html: \`<h2>Welcome to Creoed!</h2><p>Hi \${name},</p><p>Please activate your account by clicking the link below:</p><a href="\${activationLink}">Activate My Account</a><p>Or visit: \${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>\`
+                    html: `<h2>Welcome to Creoed!</h2><p>Hi ${name},</p><p>Please activate your account by clicking the link below:</p><a href="${activationLink}">Activate My Account</a><p>Or visit: ${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>`
                 });
             } catch (err) { console.error('Failed sending activation:', err); }
         }
