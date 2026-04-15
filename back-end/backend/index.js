@@ -37,6 +37,8 @@ app.use('/api/progress', require('./routes/progress'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/backup', require('./routes/backup'));
 app.use('/api/coupons', require('./routes/coupons'));
+app.use('/api/contact', require('./routes/contact'));
+
 
 app.get('/', (req, res) => res.send('Creoed LMS API Running'));
 
