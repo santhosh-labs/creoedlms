@@ -160,7 +160,7 @@ router.post('/public-register', async (req, res) => {
 
         const [insertResult] = await connection.query(
             `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName, IsActive, ActivationToken) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
             [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null, activationToken]
         );
         const newUserId = insertResult.insertId;
