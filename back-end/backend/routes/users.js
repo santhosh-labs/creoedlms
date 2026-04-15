@@ -167,6 +167,7 @@ router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tut
                    u.IsActive, u.CollegeName,
                    COALESCE(u.Designation, '') as Designation,
                    COALESCE(u.Organisation, '') as Organisation,
+                   COALESCE(u.InterestedDomains, '') as InterestedDomains,
                    fm.CourseID, c.Name as CourseName, c2.BatchName, c2.BatchCode,
                    fm.TotalFee, fm.AmountPaid, fm.PaymentStatus
             FROM Users u
@@ -369,11 +370,27 @@ router.put('/students/:id/activate', verifyToken, authorizeRoles('Super Admin', 
 // @desc    Update user profile fields (from website ProfilePage)
 // @access  Private
 router.put('/:id', verifyToken, async (req, res) => {
-    const { Name, Phone, Gender, DateOfBirth, City, Country, CollegeName } = req.body;
+    const { Name, Phone, Gender, DateOfBirth, City, Country, CollegeName, interestedDomains } = req.body;
     try {
+        // interestedDomains from onboarding survey — save as comma-separated string
+        const domainsStr = Array.isArray(interestedDomains)
+            ? interestedDomains.join(',')
+            : (interestedDomains || null);
+
         await pool.query(
-            `UPDATE Users SET Name = COALESCE(?, Name), Phone = COALESCE(?, Phone), Gender = COALESCE(?, Gender), DateOfBirth = COALESCE(?, DateOfBirth), City = COALESCE(?, City), Country = COALESCE(?, Country), CollegeName = COALESCE(?, CollegeName) WHERE ID = ?`,
-            [Name || null, Phone || null, Gender || null, DateOfBirth || null, City || null, Country || null, CollegeName || null, req.params.id]
+            `UPDATE Users SET 
+                Name = COALESCE(?, Name),
+                Phone = COALESCE(?, Phone),
+                Gender = COALESCE(?, Gender),
+                DateOfBirth = COALESCE(?, DateOfBirth),
+                City = COALESCE(?, City),
+                Country = COALESCE(?, Country),
+                CollegeName = COALESCE(?, CollegeName),
+                InterestedDomains = COALESCE(?, InterestedDomains)
+            WHERE ID = ?`,
+            [Name || null, Phone || null, Gender || null, DateOfBirth || null,
+             City || null, Country || null, CollegeName || null,
+             domainsStr, req.params.id]
         );
         res.json({ message: 'Profile updated successfully' });
     } catch (err) {

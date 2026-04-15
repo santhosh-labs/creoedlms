@@ -1,684 +1,659 @@
 import { useEffect, useState, useRef } from 'react';
-import { Users, AlertCircle, Plus, Upload, Trash2, BookOpen, CheckSquare, Search, Filter, ShieldCheck, KeyRound, ShieldOff } from 'lucide-react';
+import {
+  Users, AlertCircle, Plus, Upload, BookOpen, CheckSquare,
+  Search, Filter, ShieldCheck, KeyRound, Trash2, MoreVertical,
+  Tag, X
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api';
 
-export default function SuperAdminStudents({ user }) {
-    const [students, setStudents] = useState([]);
-    const [courses, setCourses] = useState([]);
-    const [classes, setClasses] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
+/* ── Reusable 3-dot Action Dropdown ────────────────────────────── */
+function ActionMenu({ items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-    const [selectedStudents, setSelectedStudents] = useState([]);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showAssignModal, setShowAssignModal] = useState(false);
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-    // Change Course modal (Super Admin only)
-    const [changeCourseStudent, setChangeCourseStudent] = useState(null);
-    const [changeCourseData, setChangeCourseData] = useState({ courseId: '', classId: '', totalFee: '', amountPaid: '' });
-    const [changeCourseLoading, setChangeCourseLoading] = useState(false);
-
-    const isSuperAdmin = user?.role === 'Super Admin';
-
-    const [formLoading, setFormLoading] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', courseId: '', classId: '', totalFee: '', feePaid: '', dob: '', gender: '', city: '', country: '' });
-    const [assignData, setAssignData] = useState({ courseId: '', classId: '', totalFee: '' });
-    const [filters, setFilters] = useState({ id: '', name: '', email: '', course: '', batch: '', status: '' });
-    const fileInputRef = useRef(null);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const [resStudents, resCourses, resClasses] = await Promise.all([
-                api.get('/users/students'),
-                api.get('/courses'),
-                api.get('/courses/classes/my') // Gets classes for assignment drop downs
-            ]);
-            setStudents(resStudents.data);
-            setCourses(resCourses.data);
-            setClasses(resClasses.data);
-        } catch (err) {
-            console.error('Failed to load data', err);
-            setError(true);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const handleSelect = (id) => {
-        setSelectedStudents(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
-    };
-
-    const handleSelectAll = (e) => {
-        if (e.target.checked) setSelectedStudents(students.map(s => s.ID));
-        else setSelectedStudents([]);
-    };
-
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this student and all their data permanently?")) return;
-        try {
-            await api.delete(`/users/students/${id}`);
-            fetchData();
-        } catch (err) {
-            alert("Error deleting student. Backend error.");
-        }
-    };
-
-    const handleActivateAccount = async (id) => {
-        if (!window.confirm('Activate this account? The user will be able to log in immediately.')) return;
-        try {
-            await api.put(`/users/students/${id}/activate`);
-            fetchData();
-        } catch (err) {
-            alert('Failed to activate account.');
-        }
-    };
-
-    const handleSendResetPassword = async (email) => {
-        if (!window.confirm(`Send a password reset link to ${email}?`)) return;
-        try {
-            await api.post('/auth/forgot-password', { email });
-            alert('Password reset link sent to ' + email);
-        } catch (err) {
-            alert('Failed to send reset link.');
-        }
-    };
-
-    const handleBulkAssign = async () => {
-        if (selectedStudents.length === 0 || !assignData.classId || !assignData.courseId) {
-            return alert("Please select students, a course, and a batch.");
-        }
-        try {
-            await api.post('/users/students/bulk-assign', {
-                studentIds: selectedStudents,
-                classId: assignData.classId,
-                courseId: assignData.courseId,
-                totalFee: assignData.totalFee || 0
-            });
-            alert("Students assigned successfully!");
-            setShowAssignModal(false);
-            setSelectedStudents([]);
-            fetchData();
-        } catch (err) {
-            alert("Bulk assign failed. Check console.");
-            console.error(err);
-        }
-    };
-
-    const handleAddStudent = async (e) => {
-        e.preventDefault();
-        // Validate feePaid does not exceed totalFee
-        const paid = parseFloat(formData.feePaid || 0);
-        const total = parseFloat(formData.totalFee || 0);
-        if (total > 0 && paid > total) {
-            return alert(`Fees paid (₹${paid.toLocaleString()}) cannot exceed total course fee (₹${total.toLocaleString()}).`);
-        }
-        try {
-            setFormLoading(true);
-            const payload = { ...formData, roleId: 4 };
-            await api.post('/users/register', payload);
-            setShowAddModal(false);
-            setFormData({ name: '', email: '', phone: '', password: '', courseId: '', classId: '', totalFee: '', feePaid: '', dob: '', gender: '', city: '', country: '' });
-            fetchData();
-
-            const banner = document.createElement('div');
-            banner.textContent = '✓ Student enrolled successfully';
-            Object.assign(banner.style, { position: 'fixed', top: '20px', right: '20px', background: 'var(--success)', color: '#fff', padding: '12px 20px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' });
-            document.body.appendChild(banner);
-            setTimeout(() => banner.remove(), 3000);
-        } catch (err) {
-            alert(err.response?.data?.message || 'Failed to add student.');
-        } finally {
-            setFormLoading(false);
-        }
-    };
-
-    const handleExcelUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-            try {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
-                const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
-
-                if (data.length > 0) {
-                    setLoading(true);
-                    let successCount = 0;
-                    const errors = [];
-                    for (let row of data) {
-                        try {
-                            const courseId  = row.CourseID  || row.courseId  || row.course_id  || '';
-                            const classId   = row.ClassID   || row.classId   || row.class_id   || '';
-                            const feePaid   = row.FeePaid   || row.feePaid   || row.fee_paid   || 0;
-                            const totalFee  = row.TotalFee  || row.totalFee  || row.total_fee  || '';
-
-                            // Look up totalFee from courses list if not provided
-                            let resolvedTotalFee = totalFee;
-                            if (!resolvedTotalFee && courseId) {
-                                const found = courses.find(c => c.ID == courseId);
-                                if (found) resolvedTotalFee = found.TotalFee;
-                            }
-
-                            await api.post('/users/register', {
-                                name:       row.Name     || row.name,
-                                email:      row.Email    || row.email,
-                                phone:      row.Phone    || row.phone    || '',
-                                password:   row.Password || row.password || 'password123',
-                                gender:     row.Gender   || row.gender   || '',
-                                city:       row.City     || row.city     || '',
-                                country:    row.Country  || row.country  || '',
-                                dob:        row.DOB      || row.dob      || '',
-                                roleId:     4,
-                                courseId:   courseId  || undefined,
-                                classId:    classId   || undefined,
-                                totalFee:   resolvedTotalFee || undefined,
-                                feePaid:    feePaid,
-                            });
-                            successCount++;
-                        } catch (err) {
-                            const errMsg = err.response?.data?.message || 'Unknown error';
-                            errors.push(`Row ${data.indexOf(row)+2}: ${row.Email || row.email} — ${errMsg}`);
-                            console.log('Skipped row:', row.Email || row.email, errMsg);
-                        }
-                    }
-                    let msg = `Bulk upload completed! Imported ${successCount} out of ${data.length} records.`;
-                    if (errors.length) msg += `\n\nFailed rows:\n${errors.join('\n')}`;
-                    alert(msg);
-                    fetchData();
-                } else {
-                    alert('No valid data found in sheet. Please check the file format.');
-                }
-            } catch (err) {
-                alert('Error reading file. Make sure it is a valid .xlsx or .csv.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-                if (fileInputRef.current) fileInputRef.current.value = '';
-            }
-        };
-        reader.readAsBinaryString(file);
-    };
-
-    const lbl = { display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' };
-
-    // ── Full-page: Bulk Assign ─────────────────────────────────────────────
-    if (showAssignModal) {
-        return (
-            <div className="content-wrapper">
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>← Back</button>
-                    <h2 className="page-title" style={{ margin: 0 }}>Bulk Assign — {selectedStudents.length} Student{selectedStudents.length !== 1 ? 's' : ''}</h2>
-                </div>
-                <div className="section-card" style={{ maxWidth: '560px', margin: '0 auto', padding: '32px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                            <label style={lbl}>Target Course *</label>
-                            <select className="form-input" value={assignData.courseId} onChange={e => {
-                                const selectedCourse = courses.find(c => c.ID == e.target.value);
-                                setAssignData({ ...assignData, courseId: e.target.value, totalFee: selectedCourse ? selectedCourse.TotalFee : '' });
-                            }}>
-                                <option value="">Select Course</option>
-                                {courses.map(c => <option key={c.ID} value={c.ID}>{c.Name} — ₹{Number(c.TotalFee).toLocaleString()}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label style={lbl}>Target Batch *</label>
-                            <select className="form-input" value={assignData.classId} onChange={e => setAssignData({ ...assignData, classId: e.target.value })}>
-                                <option value="">Select Batch</option>
-                                {classes.filter(c => assignData.courseId ? c.CourseID == assignData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — Tutor: {c.TutorName}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label style={lbl}>Total Course Fee</label>
-                            <input className="form-input" type="number" readOnly value={assignData.totalFee || ''} style={{ background: 'var(--bg)', cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 600 }} placeholder="Auto-filled from course" />
-                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px' }}>Automatically filled from the selected course.</p>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>Cancel</button>
-                            <button type="button" className="btn btn-primary" onClick={handleBulkAssign}>Confirm Assignment</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // ── Full-page: Change Course ──────────────────────────────────────────
-    if (changeCourseStudent) {
-        return (
-            <div className="content-wrapper">
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button className="btn btn-secondary" onClick={() => setChangeCourseStudent(null)}>← Back</button>
-                    <h2 className="page-title" style={{ margin: 0 }}>Change Course Assignment</h2>
-                </div>
-                <div className="section-card" style={{ maxWidth: '560px', margin: '0 auto', padding: '32px' }}>
-                    {/* Student info */}
-                    <div style={{ background: 'var(--bg)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '24px', border: '1px solid var(--border)', fontSize: '14px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div>
-                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>Student</span>
-                                <strong>{changeCourseStudent.Name}</strong>
-                                {changeCourseStudent.StudentCode && <span style={{ marginLeft: '8px', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px' }}>{changeCourseStudent.StudentCode}</span>}
-                            </div>
-                            <div>
-                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block' }}>Current Course</span>
-                                <strong>{changeCourseStudent.CourseName || 'Unassigned'}</strong>
-                            </div>
-                        </div>
-                        <div style={{ marginTop: '12px', padding: '10px 12px', background: 'var(--warning-bg)', borderRadius: 'var(--radius-sm)', fontSize: '13px', color: 'var(--warning)', fontWeight: 500 }}>
-                            Note: Changing the course will reset the student's fee record to Pending.
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div>
-                            <label style={lbl}>New Course *</label>
-                            <select className="form-input" value={changeCourseData.courseId} onChange={e => {
-                                const selected = courses.find(c => c.ID == e.target.value);
-                                setChangeCourseData({ courseId: e.target.value, classId: '', totalFee: selected ? selected.TotalFee : '', amountPaid: '' });
-                            }} required>
-                                <option value="">Select New Course</option>
-                                {courses.map(c => <option key={c.ID} value={c.ID}>[{c.CourseCode}] {c.Name}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label style={lbl}>New Batch *</label>
-                            <select className="form-input" value={changeCourseData.classId} onChange={e => setChangeCourseData({ ...changeCourseData, classId: e.target.value })} required>
-                                <option value="">Select New Batch</option>
-                                {classes.filter(c => changeCourseData.courseId ? c.CourseID == changeCourseData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — Tutor: {c.TutorName}</option>)}
-                            </select>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                                <label style={lbl}>Total Course Fee</label>
-                                <input className="form-input" type="number" value={changeCourseData.totalFee || ''} readOnly placeholder="Auto-filled from course" style={{ background: 'var(--bg)', cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 700 }} />
-                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Auto-filled</p>
-                            </div>
-                            <div>
-                                <label style={lbl}>Amount Paid Now (₹)</label>
-                                <input className="form-input" type="number" min="0" max={changeCourseData.totalFee || undefined} placeholder="0" value={changeCourseData.amountPaid} disabled={!changeCourseData.totalFee}
-                                    onChange={e => {
-                                        const val = parseFloat(e.target.value);
-                                        const max = parseFloat(changeCourseData.totalFee || 0);
-                                        if (max > 0 && val > max) return;
-                                        setChangeCourseData({ ...changeCourseData, amountPaid: e.target.value });
-                                    }}
-                                    style={{ borderColor: changeCourseData.amountPaid && parseFloat(changeCourseData.amountPaid) > parseFloat(changeCourseData.totalFee) ? 'var(--danger)' : undefined }}
-                                />
-                                {changeCourseData.totalFee && <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Max: ₹{Number(changeCourseData.totalFee).toLocaleString()}</p>}
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
-                            <button className="btn btn-secondary" onClick={() => setChangeCourseStudent(null)}>Cancel</button>
-                            <button
-                                className="btn btn-primary"
-                                disabled={changeCourseLoading || !changeCourseData.courseId || !changeCourseData.classId}
-                                onClick={async () => {
-                                    setChangeCourseLoading(true);
-                                    try {
-                                        await api.put(`/users/students/${changeCourseStudent.ID}/change-course`, {
-                                            courseId: changeCourseData.courseId,
-                                            classId: changeCourseData.classId,
-                                            amountPaid: parseFloat(changeCourseData.amountPaid || 0)
-                                        });
-                                        setChangeCourseStudent(null);
-                                        fetchData();
-                                    } catch (err) {
-                                        alert(err.response?.data?.message || 'Failed to change course.');
-                                    } finally {
-                                        setChangeCourseLoading(false);
-                                    }
-                                }}
-                            >
-                                {changeCourseLoading ? 'Updating...' : 'Confirm Change'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (showAddModal) {
-        return (
-            <div className="content-wrapper">
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button className="btn btn-secondary" onClick={() => setShowAddModal(false)} style={{ border: 'none', background: 'transparent' }}>
-                        ← Back to Students
-                    </button>
-                </div>
-
-                <div className="section-card" style={{ maxWidth: '850px', margin: '0 auto', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
-                    <div className="section-header" style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
-                        <div>
-                            <h2 className="section-title" style={{ fontSize: '20px', margin: 0 }}>Enroll New Student</h2>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '14px', margin: '4px 0 0' }}>Enter student details and assign them to a course batch.</p>
-                        </div>
-                    </div>
-
-                    <form onSubmit={handleAddStudent} style={{ display: 'flex', flexDirection: 'column', gap: '32px', padding: '32px' }}>
-                        
-                        {/* ─── Personal Information ─── */}
-                        <div>
-                            <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '6px', height: '6px', background: 'var(--primary)', borderRadius: '50%' }}></div>
-                                Personal Details
-                            </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Full Name *</label>
-                            <input className="form-input" placeholder="e.g. John Doe" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Email Address *</label>
-                            <input className="form-input" type="email" placeholder="student@example.com" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Temporary Password *</label>
-                            <input className="form-input" type="password" placeholder="Min. 6 characters" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} required />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Phone Number</label>
-                            <input className="form-input" placeholder="+91 9876543210 (Optional)" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
-                        </div>
-
-                            </div>
-                        </div>
-
-                        {/* ─── Additional Info ─── */}
-                        <div>
-                            <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-main)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '6px', height: '6px', background: 'var(--primary)', borderRadius: '50%' }}></div>
-                                Additional Information <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text-muted)' }}>(Optional)</span>
-                            </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Date of Birth</label>
-                                    <input className="form-input" type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Gender</label>
-                                    <select className="form-input" value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
-                                        <option value="">Select Gender</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>City</label>
-                                    <input className="form-input" placeholder="e.g. Mumbai" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Country</label>
-                                    <input className="form-input" placeholder="e.g. India" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ─── Enrollment Details ─── */}
-                        <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                            <h3 style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-main)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '6px', height: '6px', background: 'var(--primary)', borderRadius: '50%' }}></div>
-                                Course Enrollment
-                            </h3>
-                            
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Active Course *</label>
-                                    <select className="form-input" value={formData.courseId} onChange={e => {
-                                        const selectedCourse = courses.find(c => c.ID == e.target.value);
-                                        setFormData({ ...formData, courseId: e.target.value, classId: '', totalFee: selectedCourse ? selectedCourse.TotalFee : '' });
-                                    }} required style={{ background: 'var(--surface)' }}>
-                                        <option value="">Select Target Course</option>
-                                        {courses.map(c => <option key={c.ID} value={c.ID}>{c.Name} — ₹{Number(c.TotalFee).toLocaleString()}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Assigned Batch / Class *</label>
-                                    <select className="form-input" value={formData.classId} onChange={e => setFormData({ ...formData, classId: e.target.value })} required style={{ background: 'var(--surface)' }}>
-                                        <option value="">Select Assigned Batch</option>
-                                        {classes.filter(c => formData.courseId ? c.CourseID == formData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — Tutor: {c.TutorName}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', borderTop: '1px dashed var(--border)', paddingTop: '20px' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Total Course Fee (₹)</label>
-                                    <input
-                                        className="form-input"
-                                        type="number"
-                                        value={formData.totalFee}
-                                        readOnly
-                                        style={{ background: 'transparent', border: '1px solid var(--border)', cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 600, fontSize: '16px' }}
-                                        placeholder="Auto-filled from course"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--text-muted)', marginBottom: '6px' }}>Fees Paid Now (₹)</label>
-                                    <input
-                                        className="form-input"
-                                        type="number"
-                                        min="0"
-                                        max={formData.totalFee || undefined}
-                                        disabled={!formData.totalFee}
-                                        placeholder="0"
-                                        value={formData.feePaid}
-                                        onChange={e => {
-                                            const val = parseFloat(e.target.value);
-                                            const max = parseFloat(formData.totalFee || 0);
-                                            if (max > 0 && val > max) return;
-                                            setFormData({ ...formData, feePaid: e.target.value });
-                                        }}
-                                        style={{ background: 'var(--surface)', fontSize: '16px', fontWeight: 500, borderColor: formData.feePaid && parseFloat(formData.feePaid) > parseFloat(formData.totalFee) ? 'var(--danger)' : undefined }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', borderTop: '1px solid var(--border)', margin: '0 -32px -32px -32px', padding: '24px 32px', background: 'var(--bg)', borderRadius: '0 0 var(--radius-md) var(--radius-md)' }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)} style={{ padding: '10px 24px' }}>Cancel</button>
-                            <button type="submit" className="btn btn-primary" disabled={formLoading} style={{ padding: '10px 32px' }}>
-                                {formLoading ? 'Registering...' : 'Enroll Student'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
-    }
-
-    return (
-        <div className="content-wrapper">
-            {error && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 'var(--radius-md)', marginBottom: '24px' }}>
-                    <AlertCircle size={20} />
-                    <div>
-                        <strong>Backend Connection Failed</strong>
-                        <p style={{ fontSize: '13px', marginTop: '4px' }}>The frontend cannot reach the backend API.</p>
-                    </div>
-                </div>
-            )}
-
-            <div className="section-card">
-                <div className="section-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
-                    <h2 className="section-title"><Users style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }} />Students Management</h2>
-
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        {selectedStudents.length > 0 && (
-                            <button className="btn btn-secondary" onClick={() => setShowAssignModal(true)} style={{ borderColor: 'var(--primary)' }}>
-                                <CheckSquare size={16} /> Assign Selected ({selectedStudents.length})
-                            </button>
-                        )}
-                        <button className="btn btn-secondary" onClick={() => {
-                            // Build template with courses info in header comment
-                            const courseInfo = courses.map(c => `CourseID ${c.ID} = ${c.Name} (Fee: ${c.TotalFee})`).join(' | ');
-                            const classInfo  = classes.map(c => `ClassID ${c.ClassID} = ${c.BatchName}`).join(' | ');
-                            const header = `Name,Email,Phone,Password,CourseID,ClassID,FeePaid,Gender,City,Country,DOB`;
-                            const example1 = `John Doe,john@example.com,9876543210,password123,${courses[0]?.ID || 1},${classes[0]?.ClassID || 1},5000,Male,Mumbai,India,2000-01-15`;
-                            const example2 = `Jane Smith,jane@example.com,9876543211,password123,${courses[0]?.ID || 1},${classes[0]?.ClassID || 1},0,Female,Delhi,India,2001-03-20`;
-                            const note = `NOTE: ${courseInfo || 'No courses yet'} || ${classInfo || 'No classes yet'}`;
-                            const csvContent = `data:text/csv;charset=utf-8,${header}\n${example1}\n${example2}\n# ${note}`;
-                            const link = document.createElement('a');
-                            link.setAttribute('href', encodeURI(csvContent));
-                            link.setAttribute('download', 'Student_Import_Template.csv');
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        }}>
-                            Download Template
-                        </button>
-                        <input type="file" accept=".xlsx, .xls, .csv" onChange={handleExcelUpload} ref={fileInputRef} style={{ display: 'none' }} />
-                        <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
-                            <Upload size={16} /> Import Excel
-                        </button>
-                        <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                            <Plus size={16} /> Add Student
-                        </button>
-                    </div>
-                </div>
-
-                <div className="table-container">
-                    <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '14px', fontWeight: 500, marginRight: '8px' }}>
-                            <Filter size={16} style={{ marginRight: '6px' }} /> Filters:
-                        </div>
-                        <div style={{ position: 'relative', width: '140px' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder="Student ID" value={filters.id} onChange={e => setFilters({...filters, id: e.target.value})} className="form-input" style={{ width: '100%', paddingLeft: '32px', fontSize: '13px', minHeight: '36px' }} />
-                        </div>
-                        <div style={{ position: 'relative', width: '180px' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder="Name" value={filters.name} onChange={e => setFilters({...filters, name: e.target.value})} className="form-input" style={{ width: '100%', paddingLeft: '32px', fontSize: '13px', minHeight: '36px' }} />
-                        </div>
-                        <div style={{ position: 'relative', width: '180px' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder="Email" value={filters.email} onChange={e => setFilters({...filters, email: e.target.value})} className="form-input" style={{ width: '100%', paddingLeft: '32px', fontSize: '13px', minHeight: '36px' }} />
-                        </div>
-                        <div style={{ position: 'relative', width: '160px' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder="Course" value={filters.course} onChange={e => setFilters({...filters, course: e.target.value})} className="form-input" style={{ width: '100%', paddingLeft: '32px', fontSize: '13px', minHeight: '36px' }} />
-                        </div>
-                        <div style={{ position: 'relative', width: '140px' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                            <input type="text" placeholder="Batch" value={filters.batch} onChange={e => setFilters({...filters, batch: e.target.value})} className="form-input" style={{ width: '100%', paddingLeft: '32px', fontSize: '13px', minHeight: '36px' }} />
-                        </div>
-                        <div style={{ width: '140px' }}>
-                            <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})} className="form-input" style={{ width: '100%', fontSize: '13px', minHeight: '36px' }}>
-                                <option value="">All Statuses</option>
-                                <option value="Paid">Paid</option>
-                                <option value="Pending">Pending</option>
-                            </select>
-                        </div>
-                    </div>
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" onChange={handleSelectAll} checked={students.length > 0 && selectedStudents.length === students.length} />
-                                </th>
-                                <th>Student ID</th>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Designation</th>
-                                <th>Course</th>
-                                <th>Batch</th>
-                                <th>Paid / Total</th>
-                                <th>Acct. Status</th>
-                                <th>Pay Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '40px' }}>Loading...</td></tr>
-                            ) : (() => {
-                                const filteredStudents = students.filter(s => {
-                                    return (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
-                                           (s.Name || '').toLowerCase().includes(filters.name.toLowerCase()) &&
-                                           (s.Email || '').toLowerCase().includes(filters.email.toLowerCase()) &&
-                                           (s.CourseName || '').toLowerCase().includes(filters.course.toLowerCase()) &&
-                                           (s.BatchName || '').toLowerCase().includes(filters.batch.toLowerCase()) &&
-                                           (s.PaymentStatus || '').toLowerCase().includes(filters.status.toLowerCase());
-                                });
-
-                                if (filteredStudents.length === 0) {
-                                    return <tr><td colSpan="10" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No students found matching your filters.</td></tr>;
-                                }
-
-                                return filteredStudents.map((s, i) => (
-                                    <tr key={`${s.ID}-${i}`}>
-                                        <td>
-                                            <input type="checkbox" checked={selectedStudents.includes(s.ID)} onChange={() => handleSelect(s.ID)} />
-                                        </td>
-                                        <td>
-                                            <span style={{ background: '#e8f5ee', color: 'var(--primary)', fontWeight: 700, fontSize: '11px', padding: '2px 7px', borderRadius: '4px', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
-                                                {s.StudentCode || '—'}
-                                            </span>
-                                        </td>
-                                        <td><strong>{s.Name}</strong></td>
-                                        <td>{s.Email}</td>
-                                        <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.Designation || '—'}</td>
-                                        <td>{s.CourseName || <span style={{ color: 'var(--warning)', fontSize: '12px' }}>Unassigned</span>}</td>
-                                        <td>{s.BatchName || '—'}</td>
-                                        <td style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-                                            {s.AmountPaid != null ? (
-                                                <span>₹{Number(s.AmountPaid).toLocaleString()} / ₹{Number(s.TotalFee).toLocaleString()}</span>
-                                            ) : '—'}
-                                        </td>
-                                        <td>
-                                            {s.IsActive ? (
-                                                <span style={{ background: '#dcfce7', color: '#16a34a', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px' }}>Active</span>
-                                            ) : (
-                                                <span style={{ background: '#fef2f2', color: '#ef4444', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px' }}>Inactive</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <span className={`status-badge ${s.PaymentStatus === 'Paid' ? 'status-paid' : 'status-pending'}`} style={{ background: s.PaymentStatus === 'Paid' ? 'var(--success-bg)' : 'var(--warning-bg)', color: s.PaymentStatus === 'Paid' ? 'var(--success)' : 'var(--warning)' }}>
-                                                {s.PaymentStatus || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                {isSuperAdmin && !s.IsActive && (
-                                                    <button title="Activate Account" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: '#16a34a', borderColor: '#16a34a', whiteSpace: 'nowrap' }} onClick={() => handleActivateAccount(s.ID)}>
-                                                        <ShieldCheck size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Activate
-                                                    </button>
-                                                )}
-                                                {isSuperAdmin && (
-                                                    <button title="Send Reset Password" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }} onClick={() => handleSendResetPassword(s.Email)}>
-                                                        <KeyRound size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Reset PWD
-                                                    </button>
-                                                )}
-                                                {isSuperAdmin && (
-                                                    <button title="Change Course (Super Admin)" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }} onClick={() => { setChangeCourseStudent(s); setChangeCourseData({ courseId: '', classId: '', totalFee: '', amountPaid: '' }); }}>
-                                                        <BookOpen size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Course
-                                                    </button>
-                                                )}
-                                                <button className="icon-button" title="Delete student" style={{ color: 'var(--danger)', width: '32px', height: '32px' }} onClick={() => handleDelete(s.ID)}>
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ));
-                            })()}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  return (
+    <div className="action-dropdown-wrapper" ref={ref}>
+      <button
+        className="action-kebab-btn"
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+        title="Actions"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="action-dropdown-menu">
+          {items.map((item, i) =>
+            item === 'divider' ? (
+              <div key={i} className="action-dropdown-divider" />
+            ) : (
+              <button
+                key={i}
+                className={`action-dropdown-item${item.danger ? ' danger' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(false); item.onClick(); }}
+              >
+                {item.icon && <span style={{ display: 'flex', flexShrink: 0 }}>{item.icon}</span>}
+                {item.label}
+              </button>
+            )
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
+}
+
+/* ── Domain chips component ─────────────────────────────────────── */
+function DomainChips({ domains }) {
+  if (!domains) return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>;
+  const list = Array.isArray(domains) ? domains : domains.split(',').map(d => d.trim()).filter(Boolean);
+  if (!list.length) return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '220px' }}>
+      {list.map((d, i) => (
+        <span key={i} className="domain-chip"><Tag size={9} /> {d}</span>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+export default function SuperAdminStudents({ user }) {
+  const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const [selectedStudents, setSelectedStudents] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [changeCourseStudent, setChangeCourseStudent] = useState(null);
+  const [changeCourseData, setChangeCourseData] = useState({ courseId: '', classId: '', totalFee: '', amountPaid: '' });
+  const [changeCourseLoading, setChangeCourseLoading] = useState(false);
+
+  const isSuperAdmin = user?.role === 'Super Admin';
+
+  const [formLoading, setFormLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '', email: '', phone: '', password: '', courseId: '',
+    classId: '', totalFee: '', feePaid: '', dob: '', gender: '', city: '', country: ''
+  });
+  const [assignData, setAssignData] = useState({ courseId: '', classId: '', totalFee: '' });
+  const [filters, setFilters] = useState({ id: '', name: '', email: '', course: '', batch: '', status: '' });
+  const fileInputRef = useRef(null);
+
+  /* ── Data fetching ──────────────────────────────────────────── */
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [resStudents, resCourses, resClasses] = await Promise.all([
+        api.get('/users/students'),
+        api.get('/courses'),
+        api.get('/courses/classes/my')
+      ]);
+      setStudents(resStudents.data);
+      setCourses(resCourses.data);
+      setClasses(resClasses.data);
+    } catch (err) {
+      console.error('Failed to load data', err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  /* ── Selection helpers ──────────────────────────────────────── */
+  const handleSelect = (id) => setSelectedStudents(p => p.includes(id) ? p.filter(s => s !== id) : [...p, id]);
+  const handleSelectAll = (e) => {
+    if (e.target.checked) setSelectedStudents(students.map(s => s.ID));
+    else setSelectedStudents([]);
+  };
+
+  /* ── Actions ────────────────────────────────────────────────── */
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this student and all their data permanently?')) return;
+    try { await api.delete(`/users/students/${id}`); fetchData(); }
+    catch { alert('Error deleting student.'); }
+  };
+
+  const handleActivateAccount = async (id) => {
+    if (!window.confirm('Activate this account? The user will be able to log in immediately.')) return;
+    try { await api.put(`/users/students/${id}/activate`); fetchData(); }
+    catch { alert('Failed to activate account.'); }
+  };
+
+  const handleSendResetPassword = async (email) => {
+    if (!window.confirm(`Send a password reset link to ${email}?`)) return;
+    try {
+      await api.post('/auth/forgot-password', { email });
+      alert('Password reset link sent to ' + email);
+    } catch { alert('Failed to send reset link.'); }
+  };
+
+  const handleBulkAssign = async () => {
+    if (!selectedStudents.length || !assignData.classId || !assignData.courseId)
+      return alert('Please select students, a course, and a batch.');
+    try {
+      await api.post('/users/students/bulk-assign', {
+        studentIds: selectedStudents,
+        classId: assignData.classId,
+        courseId: assignData.courseId,
+        totalFee: assignData.totalFee || 0
+      });
+      alert('Students assigned successfully!');
+      setShowAssignModal(false);
+      setSelectedStudents([]);
+      fetchData();
+    } catch (err) { alert('Bulk assign failed.'); console.error(err); }
+  };
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    const paid = parseFloat(formData.feePaid || 0);
+    const total = parseFloat(formData.totalFee || 0);
+    if (total > 0 && paid > total)
+      return alert(`Fees paid (₹${paid.toLocaleString()}) cannot exceed total fee (₹${total.toLocaleString()}).`);
+    try {
+      setFormLoading(true);
+      await api.post('/users/register', { ...formData, roleId: 4 });
+      setShowAddModal(false);
+      setFormData({ name: '', email: '', phone: '', password: '', courseId: '', classId: '', totalFee: '', feePaid: '', dob: '', gender: '', city: '', country: '' });
+      fetchData();
+      const banner = document.createElement('div');
+      banner.textContent = '✓ Student enrolled successfully';
+      Object.assign(banner.style, { position: 'fixed', top: '20px', right: '20px', background: 'var(--success)', color: '#fff', padding: '12px 20px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.2)' });
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove(), 3000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to add student.');
+    } finally { setFormLoading(false); }
+  };
+
+  const handleExcelUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const wb = XLSX.read(evt.target.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws);
+        if (!data.length) return alert('No valid data found.');
+        setLoading(true);
+        let successCount = 0;
+        const errors = [];
+        for (let row of data) {
+          try {
+            const courseId = row.CourseID || row.courseId || row.course_id || '';
+            const classId = row.ClassID || row.classId || row.class_id || '';
+            const feePaid = row.FeePaid || row.feePaid || row.fee_paid || 0;
+            let totalFee = row.TotalFee || row.totalFee || row.total_fee || '';
+            if (!totalFee && courseId) {
+              const found = courses.find(c => c.ID == courseId);
+              if (found) totalFee = found.TotalFee;
+            }
+            await api.post('/users/register', {
+              name: row.Name || row.name, email: row.Email || row.email,
+              phone: row.Phone || row.phone || '', password: row.Password || row.password || 'password123',
+              gender: row.Gender || row.gender || '', city: row.City || row.city || '',
+              country: row.Country || row.country || '', dob: row.DOB || row.dob || '',
+              roleId: 4, courseId: courseId || undefined, classId: classId || undefined,
+              totalFee: totalFee || undefined, feePaid,
+            });
+            successCount++;
+          } catch (err) {
+            errors.push(`Row ${data.indexOf(row) + 2}: ${row.Email || row.email} — ${err.response?.data?.message || 'Unknown error'}`);
+          }
+        }
+        let msg = `Bulk upload completed! Imported ${successCount}/${data.length}.`;
+        if (errors.length) msg += `\n\nFailed rows:\n${errors.join('\n')}`;
+        alert(msg);
+        fetchData();
+      } catch { alert('Error reading file. Make sure it is a valid .xlsx or .csv.'); }
+      finally { setLoading(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const lbl = { display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.04em' };
+
+  /* ══════════════════════════════════════════════════════════════
+     BULK ASSIGN PAGE
+  ══════════════════════════════════════════════════════════════ */
+  if (showAssignModal) return (
+    <div className="content-wrapper">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '14px' }}>
+        <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>← Back</button>
+        <h2 className="page-title">Bulk Assign — {selectedStudents.length} Student{selectedStudents.length !== 1 ? 's' : ''}</h2>
+      </div>
+      <div className="section-card" style={{ maxWidth: '520px', margin: '0 auto' }}>
+        <div className="section-header">
+          <span className="section-title">Assign to Course & Batch</span>
+        </div>
+        <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={lbl}>Target Course *</label>
+            <select className="form-input" value={assignData.courseId} onChange={e => {
+              const s = courses.find(c => c.ID == e.target.value);
+              setAssignData({ ...assignData, courseId: e.target.value, totalFee: s ? s.TotalFee : '' });
+            }}>
+              <option value="">Select Course</option>
+              {courses.map(c => <option key={c.ID} value={c.ID}>{c.Name} — ₹{Number(c.TotalFee).toLocaleString()}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Target Batch *</label>
+            <select className="form-input" value={assignData.classId} onChange={e => setAssignData({ ...assignData, classId: e.target.value })}>
+              <option value="">Select Batch</option>
+              {classes.filter(c => assignData.courseId ? c.CourseID == assignData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — Tutor: {c.TutorName}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Total Fee</label>
+            <input className="form-input" type="number" readOnly value={assignData.totalFee || ''} style={{ cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 600 }} placeholder="Auto-filled from course" />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+            <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleBulkAssign}>Confirm Assignment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     CHANGE COURSE PAGE
+  ══════════════════════════════════════════════════════════════ */
+  if (changeCourseStudent) return (
+    <div className="content-wrapper">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '14px' }}>
+        <button className="btn btn-secondary" onClick={() => setChangeCourseStudent(null)}>← Back</button>
+        <h2 className="page-title">Change Course Assignment</h2>
+      </div>
+      <div className="section-card" style={{ maxWidth: '520px', margin: '0 auto' }}>
+        <div className="section-header">
+          <div>
+            <span className="section-title">{changeCourseStudent.Name}</span>
+            {changeCourseStudent.StudentCode && <span style={{ marginLeft: '10px', background: 'var(--primary-light)', color: 'var(--primary)', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>{changeCourseStudent.StudentCode}</span>}
+          </div>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Current: {changeCourseStudent.CourseName || 'Unassigned'}</span>
+        </div>
+        <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ background: 'var(--warning-bg)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: '12.5px', color: 'var(--warning-text)', fontWeight: 500 }}>
+            ⚠ Changing the course will reset the student's fee record to Pending.
+          </div>
+          <div>
+            <label style={lbl}>New Course *</label>
+            <select className="form-input" value={changeCourseData.courseId} onChange={e => {
+              const s = courses.find(c => c.ID == e.target.value);
+              setChangeCourseData({ courseId: e.target.value, classId: '', totalFee: s ? s.TotalFee : '', amountPaid: '' });
+            }} required>
+              <option value="">Select New Course</option>
+              {courses.map(c => <option key={c.ID} value={c.ID}>[{c.CourseCode}] {c.Name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>New Batch *</label>
+            <select className="form-input" value={changeCourseData.classId} onChange={e => setChangeCourseData({ ...changeCourseData, classId: e.target.value })} required>
+              <option value="">Select New Batch</option>
+              {classes.filter(c => changeCourseData.courseId ? c.CourseID == changeCourseData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — {c.TutorName}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div>
+              <label style={lbl}>Total Course Fee</label>
+              <input className="form-input" type="number" value={changeCourseData.totalFee || ''} readOnly style={{ cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 700 }} placeholder="Auto-filled" />
+            </div>
+            <div>
+              <label style={lbl}>Amount Paid Now (₹)</label>
+              <input className="form-input" type="number" min="0" max={changeCourseData.totalFee || undefined} placeholder="0"
+                value={changeCourseData.amountPaid} disabled={!changeCourseData.totalFee}
+                onChange={e => {
+                  const val = parseFloat(e.target.value);
+                  if (parseFloat(changeCourseData.totalFee) > 0 && val > parseFloat(changeCourseData.totalFee)) return;
+                  setChangeCourseData({ ...changeCourseData, amountPaid: e.target.value });
+                }} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+            <button className="btn btn-secondary" onClick={() => setChangeCourseStudent(null)}>Cancel</button>
+            <button className="btn btn-primary" disabled={changeCourseLoading || !changeCourseData.courseId || !changeCourseData.classId}
+              onClick={async () => {
+                setChangeCourseLoading(true);
+                try {
+                  await api.put(`/users/students/${changeCourseStudent.ID}/change-course`, {
+                    courseId: changeCourseData.courseId,
+                    classId: changeCourseData.classId,
+                    amountPaid: parseFloat(changeCourseData.amountPaid || 0)
+                  });
+                  setChangeCourseStudent(null);
+                  fetchData();
+                } catch (err) { alert(err.response?.data?.message || 'Failed to change course.'); }
+                finally { setChangeCourseLoading(false); }
+              }}>
+              {changeCourseLoading ? 'Updating...' : 'Confirm Change'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     ADD STUDENT PAGE
+  ══════════════════════════════════════════════════════════════ */
+  if (showAddModal) return (
+    <div className="content-wrapper">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '14px' }}>
+        <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>← Back to Students</button>
+        <h2 className="page-title">Enroll New Student</h2>
+      </div>
+      <div className="section-card" style={{ maxWidth: '820px', margin: '0 auto' }}>
+        <div className="section-header">
+          <div>
+            <span className="section-title">Student Registration</span>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Enter student details and assign them to a course batch.</p>
+          </div>
+        </div>
+        <form onSubmit={handleAddStudent} style={{ display: 'flex', flexDirection: 'column', gap: '28px', padding: '28px' }}>
+          {/* Personal */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 6, height: 6, background: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }} /> Personal Details
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+              {[['Full Name *', 'name', 'text', 'John Doe', true], ['Email Address *', 'email', 'email', 'student@example.com', true], ['Temporary Password *', 'password', 'password', 'Min. 6 characters', true], ['Phone Number', 'phone', 'tel', '+91 9876543210', false]].map(([label, key, type, ph, req]) => (
+                <div key={key}>
+                  <label style={lbl}>{label}</label>
+                  <input className="form-input" type={type} placeholder={ph} value={formData[key]} onChange={e => setFormData({ ...formData, [key]: e.target.value })} required={req} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional */}
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 6, height: 6, background: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }} /> Additional Info <span style={{ fontWeight: 400, color: 'var(--text-muted)', textTransform: 'none' }}>(Optional)</span>
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+              <div><label style={lbl}>Date of Birth</label><input className="form-input" type="date" value={formData.dob} onChange={e => setFormData({ ...formData, dob: e.target.value })} /></div>
+              <div>
+                <label style={lbl}>Gender</label>
+                <select className="form-input" value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
+                </select>
+              </div>
+              <div><label style={lbl}>City</label><input className="form-input" placeholder="e.g. Mumbai" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} /></div>
+              <div><label style={lbl}>Country</label><input className="form-input" placeholder="e.g. India" value={formData.country} onChange={e => setFormData({ ...formData, country: e.target.value })} /></div>
+            </div>
+          </div>
+
+          {/* Enrollment */}
+          <div style={{ background: 'var(--bg)', padding: '22px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 6, height: 6, background: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }} /> Course Enrollment
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <label style={lbl}>Active Course *</label>
+                <select className="form-input" value={formData.courseId} onChange={e => {
+                  const s = courses.find(c => c.ID == e.target.value);
+                  setFormData({ ...formData, courseId: e.target.value, classId: '', totalFee: s ? s.TotalFee : '' });
+                }} required>
+                  <option value="">Select Target Course</option>
+                  {courses.map(c => <option key={c.ID} value={c.ID}>{c.Name} — ₹{Number(c.TotalFee).toLocaleString()}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Assigned Batch *</label>
+                <select className="form-input" value={formData.classId} onChange={e => setFormData({ ...formData, classId: e.target.value })} required>
+                  <option value="">Select Batch</option>
+                  {classes.filter(c => formData.courseId ? c.CourseID == formData.courseId : true).map(c => <option key={c.ClassID} value={c.ClassID}>{c.BatchName} — {c.TutorName}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px dashed var(--border)', paddingTop: '16px' }}>
+              <div>
+                <label style={lbl}>Total Course Fee (₹)</label>
+                <input className="form-input" type="number" value={formData.totalFee} readOnly style={{ cursor: 'not-allowed', color: 'var(--primary)', fontWeight: 600 }} placeholder="Auto-filled from course" />
+              </div>
+              <div>
+                <label style={lbl}>Fees Paid Now (₹)</label>
+                <input className="form-input" type="number" min="0" max={formData.totalFee || undefined} disabled={!formData.totalFee} placeholder="0"
+                  value={formData.feePaid}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value), m = parseFloat(formData.totalFee || 0);
+                    if (m > 0 && v > m) return;
+                    setFormData({ ...formData, feePaid: e.target.value });
+                  }} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--border)', marginTop: '4px', paddingTop: '20px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={formLoading} style={{ minWidth: '130px' }}>
+              {formLoading ? 'Registering...' : 'Enroll Student'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     MAIN TABLE VIEW
+  ══════════════════════════════════════════════════════════════ */
+  const filteredStudents = students.filter(s =>
+    (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
+    (s.Name || '').toLowerCase().includes(filters.name.toLowerCase()) &&
+    (s.Email || '').toLowerCase().includes(filters.email.toLowerCase()) &&
+    (s.CourseName || '').toLowerCase().includes(filters.course.toLowerCase()) &&
+    (s.BatchName || '').toLowerCase().includes(filters.batch.toLowerCase()) &&
+    (s.PaymentStatus || '').toLowerCase().includes(filters.status.toLowerCase())
+  );
+
+  return (
+    <div className="content-wrapper">
+      {error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: 'var(--radius-md)', marginBottom: '20px', fontSize: '13px' }}>
+          <AlertCircle size={18} />
+          <div><strong>Backend Connection Failed</strong> — The frontend cannot reach the backend API.</div>
+        </div>
+      )}
+
+      <div className="section-card">
+        {/* Header */}
+        <div className="section-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: 36, height: 36, background: 'var(--primary-light)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+              <Users size={18} />
+            </div>
+            <div>
+              <h2 className="section-title">User Management</h2>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''} {selectedStudents.length > 0 ? `· ${selectedStudents.length} selected` : ''}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {selectedStudents.length > 0 && (
+              <button className="btn btn-secondary" onClick={() => setShowAssignModal(true)} style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
+                <CheckSquare size={14} /> Assign ({selectedStudents.length})
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={() => {
+              const courseInfo = courses.map(c => `CourseID ${c.ID}=${c.Name}`).join(' | ');
+              const classInfo = classes.map(c => `ClassID ${c.ClassID}=${c.BatchName}`).join(' | ');
+              const header = `Name,Email,Phone,Password,CourseID,ClassID,FeePaid,Gender,City,Country,DOB`;
+              const ex1 = `John Doe,john@example.com,9876543210,password123,${courses[0]?.ID || 1},${classes[0]?.ClassID || 1},5000,Male,Mumbai,India,2000-01-15`;
+              const ex2 = `Jane Smith,jane@example.com,9876543211,password123,${courses[0]?.ID || 1},${classes[0]?.ClassID || 1},0,Female,Delhi,India,2001-03-20`;
+              const csvContent = `data:text/csv;charset=utf-8,${header}\n${ex1}\n${ex2}\n# ${courseInfo || 'No courses yet'} || ${classInfo || 'No classes yet'}`;
+              const a = document.createElement('a');
+              a.setAttribute('href', encodeURI(csvContent));
+              a.setAttribute('download', 'Student_Import_Template.csv');
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            }}>
+              Template
+            </button>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} ref={fileInputRef} style={{ display: 'none' }} />
+            <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={14} /> Import
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={14} /> Add Student
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '12px', fontWeight: 600, marginRight: '6px', gap: '4px' }}>
+            <Filter size={13} /> Filters
+          </div>
+          {[['id', 'Student ID', 120], ['name', 'Name', 150], ['email', 'Email', 170], ['course', 'Course', 140], ['batch', 'Batch', 130]].map(([key, ph, w]) => (
+            <div key={key} style={{ position: 'relative', width: w }}>
+              <Search size={12} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input type="text" placeholder={ph} value={filters[key]} onChange={e => setFilters({ ...filters, [key]: e.target.value })}
+                className="form-input" style={{ paddingLeft: '28px', fontSize: '12px', height: '34px', padding: '0 10px 0 28px' }} />
+            </div>
+          ))}
+          <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}
+            className="form-input" style={{ width: '130px', fontSize: '12px', height: '34px', padding: '0 10px' }}>
+            <option value="">All Statuses</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Partial">Partial</option>
+          </select>
+          {Object.values(filters).some(Boolean) && (
+            <button className="btn btn-ghost" onClick={() => setFilters({ id: '', name: '', email: '', course: '', batch: '', status: '' })} style={{ height: '34px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', fontSize: '12px' }}>
+              <X size={12} /> Clear
+            </button>
+          )}
+        </div>
+
+        {/* Table */}
+        <div className="table-container">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" onChange={handleSelectAll} checked={students.length > 0 && selectedStudents.length === students.length} />
+                </th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Designation</th>
+                <th>Course</th>
+                <th>Batch</th>
+                <th>Paid / Total</th>
+                <th>Interests</th>
+                <th>Acct.</th>
+                <th>Payment</th>
+                <th style={{ width: 50 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="12" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: 28, height: 28, border: '2.5px solid var(--border)', borderTop: '2.5px solid var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    Loading students...
+                  </div>
+                </td></tr>
+              ) : filteredStudents.length === 0 ? (
+                <tr><td colSpan="12" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+                  No students found matching your filters.
+                </td></tr>
+              ) : filteredStudents.map((s, i) => {
+                const menuItems = [
+                  isSuperAdmin && !s.IsActive && {
+                    label: 'Activate Account',
+                    icon: <ShieldCheck size={14} />,
+                    onClick: () => handleActivateAccount(s.ID)
+                  },
+                  isSuperAdmin && {
+                    label: 'Send Password Reset',
+                    icon: <KeyRound size={14} />,
+                    onClick: () => handleSendResetPassword(s.Email)
+                  },
+                  isSuperAdmin && {
+                    label: 'Change Course',
+                    icon: <BookOpen size={14} />,
+                    onClick: () => { setChangeCourseStudent(s); setChangeCourseData({ courseId: '', classId: '', totalFee: '', amountPaid: '' }); }
+                  },
+                  isSuperAdmin && 'divider',
+                  {
+                    label: 'Delete Student',
+                    icon: <Trash2 size={14} />,
+                    danger: true,
+                    onClick: () => handleDelete(s.ID)
+                  }
+                ].filter(Boolean);
+
+                return (
+                  <tr key={`${s.ID}-${i}`}>
+                    <td><input type="checkbox" checked={selectedStudents.includes(s.ID)} onChange={() => handleSelect(s.ID)} /></td>
+                    <td>
+                      <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', fontWeight: 700, fontSize: '11px', padding: '2px 8px', borderRadius: 'var(--radius-full)', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>
+                        {s.StudentCode || '—'}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
+                          {(s.Name || '?')[0].toUpperCase()}
+                        </div>
+                        <strong style={{ fontSize: '13.5px' }}>{s.Name}</strong>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-sub)', fontSize: '12.5px' }}>{s.Email}</td>
+                    <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.Designation || '—'}</td>
+                    <td>
+                      {s.CourseName
+                        ? <span style={{ fontSize: '13px' }}>{s.CourseName}</span>
+                        : <span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span>}
+                    </td>
+                    <td style={{ fontSize: '12.5px' }}>{s.BatchName || '—'}</td>
+                    <td style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                      {s.AmountPaid != null
+                        ? <span>₹{Number(s.AmountPaid).toLocaleString()} <span style={{ color: 'var(--text-muted)' }}>/ ₹{Number(s.TotalFee).toLocaleString()}</span></span>
+                        : '—'}
+                    </td>
+                    <td><DomainChips domains={s.InterestedDomains} /></td>
+                    <td>
+                      {s.IsActive
+                        ? <span className="status-badge success">Active</span>
+                        : <span className="status-badge danger">Inactive</span>}
+                    </td>
+                    <td>
+                      <span className={`status-badge ${s.PaymentStatus === 'Paid' ? 'success' : s.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>
+                        {s.PaymentStatus || 'N/A'}
+                      </span>
+                    </td>
+                    <td>
+                      <ActionMenu items={menuItems} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); }}`}</style>
+    </div>
+  );
 }
