@@ -49,6 +49,7 @@ export default function Sidebar({ role }) {
                     { name: 'Financials', path: '/fees', icon: <CreditCard className="nav-item-icon" /> },
                     { name: 'Coupons', path: '/coupons', icon: <Tag className="nav-item-icon" /> },
                     { name: 'Contact Forms', path: '/contact-forms', icon: <Inbox className="nav-item-icon" /> },
+                    { name: 'Subscribers', path: '/subscribers', icon: <Users className="nav-item-icon" /> },
                     { name: 'Notice Board', path: '/announcements', icon: <MessageSquare className="nav-item-icon" /> },
                     { name: 'Backup & Restore', path: '/backup', icon: <Shield className="nav-item-icon" /> },
                 ];

@@ -26,6 +26,7 @@ import Settings from '../views/Settings';
 import BackupRestore from '../views/BackupRestore';
 import AdminCoupons from '../views/AdminCoupons';
 import SuperAdminContactForms from '../views/SuperAdminContactForms';
+import SuperAdminSubscribers from '../views/SuperAdminSubscribers';
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
@@ -74,6 +75,7 @@ export default function Dashboard() {
                 if (location.pathname === '/backup')         return <BackupRestore user={user} />;
                 if (location.pathname === '/coupons')         return <AdminCoupons user={user} />;
                 if (location.pathname === '/contact-forms')   return <SuperAdminContactForms user={user} />;
+                if (location.pathname === '/subscribers')      return <SuperAdminSubscribers user={user} />;
                 return <AdminDashboard user={user} />;
             case 'Super Admin':
                 if (location.pathname === '/students')    return <SuperAdminStudents user={user} />;
@@ -82,6 +84,7 @@ export default function Dashboard() {
                 if (location.pathname === '/backup')         return <BackupRestore user={user} />;
                 if (location.pathname === '/coupons')         return <AdminCoupons user={user} />;
                 if (location.pathname === '/contact-forms')   return <SuperAdminContactForms user={user} />;
+                if (location.pathname === '/subscribers')      return <SuperAdminSubscribers user={user} />;
                 return <SuperAdminDashboard user={user} />;
             default: return <StudentDashboard user={user} />;
         }
