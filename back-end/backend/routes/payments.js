@@ -90,8 +90,8 @@ router.post('/verify', verifyToken, async (req, res) => {
             const course = courseRows[0];
             
             await pool.query(
-                'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus, DueDate) VALUES (?, ?, ?, ?, ?, ?)',
-                [studentId, courseId, course.TotalFee, course.TotalFee, 'Completed', null]
+                'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus) VALUES (?, ?, ?, ?, ?)',
+                [studentId, courseId, course.TotalFee, course.TotalFee, 'Completed']
             );
 
             // 3. Find the most recent Class of this Course to assign the student
