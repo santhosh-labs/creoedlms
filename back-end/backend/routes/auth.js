@@ -136,7 +136,7 @@ router.post('/resend-activation', async (req, res) => {
 // @desc    Public endpoint for student registration from the marketing website
 // @access  Public
 router.post('/public-register', async (req, res) => {
-    const { name, email, phone, password, dob, gender, city, country, collegeName, courseId } = req.body;
+    const { name, email, phone, password, dob, gender, city, country, collegeName, courseId, designation, organisation } = req.body;
 
     if (!name || !email || !password) {
         return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -159,9 +159,9 @@ router.post('/public-register', async (req, res) => {
         const activationToken = crypto.randomBytes(32).toString('hex');
 
         const [insertResult] = await connection.query(
-            `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName, IsActive, ActivationToken) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`,
-            [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null, activationToken]
+            `INSERT INTO Users (Name, Email, Phone, PasswordHash, RoleID, DateOfBirth, Gender, City, Country, CollegeName, IsActive, ActivationToken, Designation, Organisation) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+            [name, email, phone || null, hashedPassword, role.ID, dob || null, gender || null, city || null, country || null, collegeName || null, activationToken, designation || null, organisation || null]
         );
         const newUserId = insertResult.insertId;
 
