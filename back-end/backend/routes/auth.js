@@ -144,13 +144,14 @@ router.post('/public-register', async (req, res) => {
             // Determine host from environment, default to production website
             const activationLink = `${process.env.LMS_API_URL || 'https://creoed-creoedlms.hf.space'}/api/auth/activate/${activationToken}`;
             try {
-                await resend.emails.send({
-                    from: 'Creoed <no-reply@creoed.com>',
+                const emailResult = await resend.emails.send({
+                    from: 'Creoed <onboarding@resend.dev>',
                     to: email,
                     subject: 'Activate your Creoed account',
-                    html: `<h2>Welcome to Creoed!</h2><p>Hi ${name},</p><p>Please activate your account by clicking the link below:</p><a href="${activationLink}">Activate My Account</a><p>Or visit: ${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>`
+                    html: `<h2>Welcome to Creoed!</h2><p>Hi ${name},</p><p>Please activate your account by clicking the link below:</p><p><a href="${activationLink}" style="background:#7c3aed;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Activate My Account</a></p><p>Or copy this link: ${activationLink}</p><p>Happy Learning!<br>The Creoed Team</p>`
                 });
-            } catch (err) { console.error('Failed sending activation:', err); }
+                console.log('Activation email sent:', emailResult);
+            } catch (err) { console.error('Failed sending activation email:', JSON.stringify(err)); }
         }
 
         res.status(201).json({ message: 'Registration successful. Check your email to activate your account!', studentCode: userCode });
@@ -241,7 +242,7 @@ router.post('/forgot-password', async (req, res) => {
         const logoContent = fs.existsSync(logoPath) ? fs.readFileSync(logoPath) : null;
 
         const emailData = {
-            from: 'Creoed <no-reply@creoed.com>',
+            from: 'Creoed <onboarding@resend.dev>',
             to: email,
             subject: 'Reset your Creoed LMS password',
             text: `Hello ${user.Name},\n\nA request has been received to change the password for your Creoed LMS account.\n\nReset your password here: ${resetLink}\n\nIf you did not initiate this request, please contact support@creoed.com.\n\nThank you,\nCreoed Team`,
