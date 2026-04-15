@@ -164,6 +164,9 @@ router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tut
     try {
         let query = `
             SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone,
+                   u.IsActive, u.CollegeName,
+                   COALESCE(u.Designation, '') as Designation,
+                   COALESCE(u.Organisation, '') as Organisation,
                    fm.CourseID, c.Name as CourseName, c2.BatchName, c2.BatchCode,
                    fm.TotalFee, fm.AmountPaid, fm.PaymentStatus
             FROM Users u
@@ -346,6 +349,36 @@ router.delete('/staff/:id', verifyToken, authorizeRoles('Super Admin'), async (r
         res.status(500).send('Server Error');
     } finally {
         connection.release();
+    }
+});
+
+// @route   PUT api/users/students/:id/activate
+// @desc    Activate a student account (Super Admin)
+// @access  Private (Super Admin)
+router.put('/students/:id/activate', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        await pool.query('UPDATE Users SET IsActive = 1, ActivationToken = NULL WHERE ID = ?', [req.params.id]);
+        res.json({ message: 'Account activated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/users/:id
+// @desc    Update user profile fields (from website ProfilePage)
+// @access  Private
+router.put('/:id', verifyToken, async (req, res) => {
+    const { Name, Phone, Gender, DateOfBirth, City, Country, CollegeName } = req.body;
+    try {
+        await pool.query(
+            `UPDATE Users SET Name = COALESCE(?, Name), Phone = COALESCE(?, Phone), Gender = COALESCE(?, Gender), DateOfBirth = COALESCE(?, DateOfBirth), City = COALESCE(?, City), Country = COALESCE(?, Country), CollegeName = COALESCE(?, CollegeName) WHERE ID = ?`,
+            [Name || null, Phone || null, Gender || null, DateOfBirth || null, City || null, Country || null, CollegeName || null, req.params.id]
+        );
+        res.json({ message: 'Profile updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 

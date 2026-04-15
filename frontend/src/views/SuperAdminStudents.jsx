@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Users, AlertCircle, Plus, Upload, Trash2, BookOpen, CheckSquare, Search, Filter } from 'lucide-react';
+import { Users, AlertCircle, Plus, Upload, Trash2, BookOpen, CheckSquare, Search, Filter, ShieldCheck, KeyRound, ShieldOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api';
 
@@ -66,6 +66,26 @@ export default function SuperAdminStudents({ user }) {
             fetchData();
         } catch (err) {
             alert("Error deleting student. Backend error.");
+        }
+    };
+
+    const handleActivateAccount = async (id) => {
+        if (!window.confirm('Activate this account? The user will be able to log in immediately.')) return;
+        try {
+            await api.put(`/users/students/${id}/activate`);
+            fetchData();
+        } catch (err) {
+            alert('Failed to activate account.');
+        }
+    };
+
+    const handleSendResetPassword = async (email) => {
+        if (!window.confirm(`Send a password reset link to ${email}?`)) return;
+        try {
+            await api.post('/auth/forgot-password', { email });
+            alert('Password reset link sent to ' + email);
+        } catch (err) {
+            alert('Failed to send reset link.');
         }
     };
 
@@ -572,16 +592,18 @@ export default function SuperAdminStudents({ user }) {
                                 <th>Student ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
+                                <th>Designation</th>
                                 <th>Course</th>
                                 <th>Batch</th>
                                 <th>Paid / Total</th>
-                                <th>Status</th>
+                                <th>Acct. Status</th>
+                                <th>Pay Status</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '40px' }}>Loading...</td></tr>
+                                <tr><td colSpan="10" style={{ textAlign: 'center', padding: '40px' }}>Loading...</td></tr>
                             ) : (() => {
                                 const filteredStudents = students.filter(s => {
                                     return (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
@@ -593,7 +615,7 @@ export default function SuperAdminStudents({ user }) {
                                 });
 
                                 if (filteredStudents.length === 0) {
-                                    return <tr><td colSpan="9" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No students found matching your filters.</td></tr>;
+                                    return <tr><td colSpan="10" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No students found matching your filters.</td></tr>;
                                 }
 
                                 return filteredStudents.map((s, i) => (
@@ -608,6 +630,7 @@ export default function SuperAdminStudents({ user }) {
                                         </td>
                                         <td><strong>{s.Name}</strong></td>
                                         <td>{s.Email}</td>
+                                        <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.Designation || '—'}</td>
                                         <td>{s.CourseName || <span style={{ color: 'var(--warning)', fontSize: '12px' }}>Unassigned</span>}</td>
                                         <td>{s.BatchName || '—'}</td>
                                         <td style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
@@ -616,21 +639,32 @@ export default function SuperAdminStudents({ user }) {
                                             ) : '—'}
                                         </td>
                                         <td>
+                                            {s.IsActive ? (
+                                                <span style={{ background: '#dcfce7', color: '#16a34a', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px' }}>Active</span>
+                                            ) : (
+                                                <span style={{ background: '#fef2f2', color: '#ef4444', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '20px' }}>Inactive</span>
+                                            )}
+                                        </td>
+                                        <td>
                                             <span className={`status-badge ${s.PaymentStatus === 'Paid' ? 'status-paid' : 'status-pending'}`} style={{ background: s.PaymentStatus === 'Paid' ? 'var(--success-bg)' : 'var(--warning-bg)', color: s.PaymentStatus === 'Paid' ? 'var(--success)' : 'var(--warning)' }}>
                                                 {s.PaymentStatus || 'N/A'}
                                             </span>
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                {isSuperAdmin && !s.IsActive && (
+                                                    <button title="Activate Account" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: '#16a34a', borderColor: '#16a34a', whiteSpace: 'nowrap' }} onClick={() => handleActivateAccount(s.ID)}>
+                                                        <ShieldCheck size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Activate
+                                                    </button>
+                                                )}
                                                 {isSuperAdmin && (
-                                                    <button
-                                                        title="Change Course (Super Admin)"
-                                                        className="btn btn-secondary"
-                                                        style={{ padding: '4px 10px', fontSize: '11px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }}
-                                                        onClick={() => { setChangeCourseStudent(s); setChangeCourseData({ courseId: '', classId: '', totalFee: '', amountPaid: '' }); }}
-                                                    >
-                                                        <BookOpen size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} />
-                                                        Change Course
+                                                    <button title="Send Reset Password" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }} onClick={() => handleSendResetPassword(s.Email)}>
+                                                        <KeyRound size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Reset PWD
+                                                    </button>
+                                                )}
+                                                {isSuperAdmin && (
+                                                    <button title="Change Course (Super Admin)" className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: '11px', color: 'var(--primary)', borderColor: 'var(--primary)', whiteSpace: 'nowrap' }} onClick={() => { setChangeCourseStudent(s); setChangeCourseData({ courseId: '', classId: '', totalFee: '', amountPaid: '' }); }}>
+                                                        <BookOpen size={13} style={{ marginRight: '3px', verticalAlign: 'middle' }} /> Course
                                                     </button>
                                                 )}
                                                 <button className="icon-button" title="Delete student" style={{ color: 'var(--danger)', width: '32px', height: '32px' }} onClick={() => handleDelete(s.ID)}>
