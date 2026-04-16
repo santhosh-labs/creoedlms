@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tag, AlertCircle, Plus, X, ToggleLeft, ToggleRight, Clock, CheckCircle } from 'lucide-react';
+import { Tag, AlertCircle, Plus, X, ToggleLeft, ToggleRight, Clock, CheckCircle, Trash2 } from 'lucide-react';
 import api from '../api';
 
 export default function Coupons() {
@@ -53,6 +53,15 @@ export default function Coupons() {
             await api.put(`/coupons/${id}`, { isActive: !currentStatus });
             fetchCoupons();
         } catch { alert('Failed to update status'); }
+    };
+
+    const handleDelete = async (id) => {
+        if (!process.env.REACT_APP_LMS_PROD && !window.confirm('Are you sure you want to delete this coupon?')) return;
+        try {
+            await api.delete(`/coupons/${id}`);
+            fetchCoupons();
+            toast('✓ Coupon deleted successfully!');
+        } catch { alert('Failed to delete coupon'); }
     };
 
     const toast = (msg) => {
@@ -351,7 +360,7 @@ export default function Coupons() {
                                     <th>Uses / Limit</th>
                                     <th>Expires On</th>
                                     <th>Status</th>
-                                    <th>Toggle</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -406,21 +415,36 @@ export default function Coupons() {
                                                 </span>
                                             </td>
                                             <td>
-                                                <button
-                                                    onClick={() => toggleStatus(c.ID, c.IsActive)}
-                                                    className="btn btn-secondary"
-                                                    style={{
-                                                        padding: '4px 12px', fontSize: '12px', display: 'flex',
-                                                        alignItems: 'center', gap: '4px',
-                                                        color: c.IsActive ? 'var(--danger)' : 'var(--success)',
-                                                        borderColor: c.IsActive ? 'var(--danger)' : 'var(--success)',
-                                                    }}
-                                                >
-                                                    {c.IsActive
-                                                        ? <><ToggleRight size={14} /> Disable</>
-                                                        : <><ToggleLeft size={14} /> Enable</>
-                                                    }
-                                                </button>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => toggleStatus(c.ID, c.IsActive)}
+                                                        className="btn btn-secondary"
+                                                        style={{
+                                                            padding: '4px 12px', fontSize: '12px', display: 'flex',
+                                                            alignItems: 'center', gap: '4px',
+                                                            color: c.IsActive ? 'var(--danger)' : 'var(--success)',
+                                                            borderColor: c.IsActive ? 'var(--danger)' : 'var(--success)',
+                                                        }}
+                                                    >
+                                                        {c.IsActive
+                                                            ? <><ToggleRight size={14} /> Disable</>
+                                                            : <><ToggleLeft size={14} /> Enable</>
+                                                        }
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(c.ID)}
+                                                        className="btn btn-secondary"
+                                                        style={{
+                                                            padding: '4px 8px', display: 'flex',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            color: 'var(--danger)', borderColor: 'var(--danger)',
+                                                            background: 'transparent'
+                                                        }}
+                                                        title="Delete Coupon"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
