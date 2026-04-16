@@ -49,6 +49,57 @@ function ActionMenu({ items }) {
   );
 }
 
+/* ── Bulk Action Dropdown ───────────────────────────────────────── */
+function BulkActionMenu({ selectedCount, onAction }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const items = [
+    { label: 'Change Course', value: 'assign' },
+    { label: 'Bulk Activate', value: 'activate' },
+    { label: 'Bulk Deactivate', value: 'deactivate' },
+    { label: 'Bulk Lock', value: 'lock' },
+    { label: 'Send Password Reset', value: 'reset_password' },
+    'divider',
+    { label: 'Bulk Delete', value: 'delete', danger: true }
+  ];
+
+  return (
+    <div style={{ position: 'relative' }} ref={ref}>
+      <button 
+        className="btn btn-secondary" 
+        style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
+        onClick={() => setOpen(!open)}
+      >
+        <CheckSquare size={14} /> Bulk Action ({selectedCount})
+      </button>
+      {open && (
+        <div className="action-dropdown-menu" style={{ top: '100%', right: 'auto', left: 0, marginTop: '6px', minWidth: '190px' }}>
+          {items.map((item, i) =>
+            item === 'divider' ? (
+              <div key={i} className="action-dropdown-divider" />
+            ) : (
+              <button
+                key={i}
+                className={`action-dropdown-item${item.danger ? ' danger' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(false); onAction(item.value); }}
+              >
+                {item.label}
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DomainChips({ domains }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -564,20 +615,10 @@ export default function SuperAdminStudents({ user }) {
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {selectedStudents.length > 0 && (
-              <select 
-                className="form-input" 
-                style={{ height: '34px', fontSize: '12px', padding: '0 10px', borderColor: 'var(--primary)', color: 'var(--primary)', fontWeight: 600, background: '#fff' }}
-                onChange={(e) => { handleBulkAction(e.target.value); e.target.value = ""; }}
-                defaultValue=""
-              >
-                <option value="" disabled>Bulk Action ({selectedStudents.length})</option>
-                <option value="assign">Change Course</option>
-                <option value="activate">Bulk Activate</option>
-                <option value="deactivate">Bulk Deactivate</option>
-                <option value="lock">Bulk Lock</option>
-                <option value="reset_password">Send Password Reset</option>
-                <option value="delete">Bulk Delete</option>
-              </select>
+              <BulkActionMenu 
+                selectedCount={selectedStudents.length} 
+                onAction={handleBulkAction} 
+              />
             )}
             <button className="btn btn-secondary" onClick={() => {
               const courseInfo = courses.map(c => `CourseID ${c.ID}=${c.Name}`).join(' | ');
