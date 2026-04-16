@@ -30,6 +30,7 @@ import SuperAdminSubscribers from '../views/SuperAdminSubscribers';
 
 export default function Dashboard() {
     const [user, setUser] = useState(null);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -43,6 +44,9 @@ export default function Dashboard() {
             setUser(JSON.parse(storedUser));
         }
     }, [navigate]);
+
+    // Close sidebar on route change
+    useEffect(() => { setMobileSidebarOpen(false); }, [location.pathname]);
 
     if (!user) return null;
 
@@ -92,9 +96,13 @@ export default function Dashboard() {
 
     return (
         <div className="app-container">
-            <Sidebar role={user.role} />
+            {/* Mobile overlay backdrop */}
+            {mobileSidebarOpen && (
+                <div className="sidebar-overlay" onClick={() => setMobileSidebarOpen(false)} />
+            )}
+            <Sidebar role={user.role} mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
             <div className="main-content">
-                <Topbar user={user} />
+                <Topbar user={user} onHamburger={() => setMobileSidebarOpen(prev => !prev)} />
                 {renderDashboardView()}
             </div>
         </div>

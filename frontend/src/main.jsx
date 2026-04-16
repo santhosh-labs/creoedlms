@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
-// ── Apply saved theme on load (default: dark) ──────────────
-const savedTheme = localStorage.getItem('creoed-theme') || 'dark';
+// ── Apply saved theme on load (default: light) ──────────────
+const savedTheme = localStorage.getItem('creoed-theme') || 'light';
 const savedAccent = localStorage.getItem('creoed-accent') || 'green';
 
 const resolvedTheme = savedTheme === 'system'
-    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'light')
     : savedTheme;
 document.documentElement.setAttribute('data-theme', resolvedTheme);
 

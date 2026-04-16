@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Calendar, MessageSquare, MessageCircle, CreditCard, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, ChevronRight, Shield, Tag, Inbox } from 'lucide-react';
+import { BookOpen, Calendar, MessageSquare, MessageCircle, CreditCard, LayoutDashboard, Users, FileText, LogOut, ChevronLeft, ChevronRight, Shield, Tag, Inbox, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Sidebar({ role }) {
+export default function Sidebar({ role, mobileOpen, onCloseMobile }) {
     const navigate = useNavigate();
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
@@ -61,7 +61,7 @@ export default function Sidebar({ role }) {
     const links = getNavLinks();
 
     return (
-        <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+        <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
             <div className="logo-container">
                 <img
                     className="logo-dark"
@@ -75,6 +75,10 @@ export default function Sidebar({ role }) {
                     alt="Creoed"
                     style={{ height: collapsed ? '32px' : '38px', width: 'auto', objectFit: 'contain', transition: 'height 0.2s', display: 'block' }}
                 />
+                {/* Mobile close button */}
+                <button className="sidebar-mobile-close" onClick={onCloseMobile} title="Close Menu">
+                    <X size={20} />
+                </button>
             </div>
             <nav className="nav-menu" style={{ flex: 1, marginTop: '12px', overflowY: 'auto' }}>
                 {links.map((link, idx) => {

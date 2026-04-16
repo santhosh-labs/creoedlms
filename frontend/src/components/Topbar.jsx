@@ -1,9 +1,9 @@
-import { Bell, HelpCircle, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, HelpCircle, User, Settings, LogOut, ChevronDown, Menu } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import api from '../api';
 
-export default function Topbar({ user }) {
+export default function Topbar({ user, onHamburger }) {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -89,7 +89,11 @@ export default function Topbar({ user }) {
 
     return (
         <div className="topbar">
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Hamburger - mobile only */}
+                <button className="topbar-hamburger" onClick={onHamburger} title="Toggle Menu">
+                    <Menu size={22} />
+                </button>
                 <h1 className="page-title">{getPageTitle()}</h1>
             </div>
 
