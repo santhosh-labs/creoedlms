@@ -27,7 +27,7 @@ try {
 // @access  Private
 router.post('/create-order', verifyToken, async (req, res) => {
     try {
-        const { courseId } = req.body;
+        const { courseId, couponCode } = req.body;
         const studentId = req.user.id;
 
         if (!razorpay) {
@@ -39,7 +39,30 @@ router.post('/create-order', verifyToken, async (req, res) => {
         if (courseRows.length === 0) return res.status(404).json({ message: 'Course not found' });
         
         const course = courseRows[0];
-        const amountInPaise = Math.round(parseFloat(course.TotalFee) * 100);
+        let totalFee = parseFloat(course.TotalFee) || 0;
+        let discount = 0;
+
+        // Apply coupon if valid
+        if (couponCode) {
+            const [coupons] = await pool.query('SELECT * FROM Coupons WHERE Code = ? AND IsActive = 1', [couponCode]);
+            if (coupons.length > 0) {
+                const coupon = coupons[0];
+                if (coupon.UsageCount < coupon.UsageLimit && (!coupon.ValidUntil || new Date() <= new Date(coupon.ValidUntil))) {
+                    discount = (totalFee * parseFloat(coupon.DiscountPercentage)) / 100;
+                }
+            }
+        }
+
+        let subtotal = totalFee - discount;
+        let tax = subtotal * 0.18; // 18% GST rules
+        let finalAmount = subtotal + tax;
+
+        // Convert to Paise for Razorpay
+        const amountInPaise = Math.round(finalAmount * 100);
+
+        if (amountInPaise === 0) {
+            return res.status(400).json({ message: 'Amount is 0. Please use the direct apply route.' });
+        }
 
         const options = {
             amount: amountInPaise,
@@ -85,13 +108,37 @@ router.post('/verify', verifyToken, async (req, res) => {
             const [userRows] = await pool.query('SELECT Name, Email FROM Users WHERE ID = ?', [studentId]);
             const user = userRows[0];
 
-            // 2. Insert into FeeManagement
+            // 2. Fetch Course & Compute Final Taxed Amount
             const [courseRows] = await pool.query('SELECT ID, Name, TotalFee FROM Courses WHERE ID = ?', [courseId]);
             const course = courseRows[0];
+
+            let totalFee = parseFloat(course.TotalFee) || 0;
+            let discount = 0;
+            let couponId = null;
+
+            if (req.body.couponCode) {
+                const [coupons] = await pool.query('SELECT * FROM Coupons WHERE Code = ? AND IsActive = 1', [req.body.couponCode]);
+                if (coupons.length > 0) {
+                    const coupon = coupons[0];
+                    if (coupon.UsageCount < coupon.UsageLimit && (!coupon.ValidUntil || new Date() <= new Date(coupon.ValidUntil))) {
+                        discount = (totalFee * parseFloat(coupon.DiscountPercentage)) / 100;
+                        couponId = coupon.ID;
+                        // Bump usage
+                        await pool.query('UPDATE Coupons SET UsageCount = UsageCount + 1 WHERE ID = ?', [couponId]);
+                        // Log usage
+                        await pool.query('INSERT INTO CouponUsage (CouponID, StudentID, CourseID) VALUES (?, ?, ?)', [couponId, studentId, courseId]);
+                    }
+                }
+            }
+
+            let subtotal = totalFee - discount;
+            let tax = subtotal * 0.18;
+            let finalPaid = subtotal + tax;
             
+            // Insert into FeeManagement
             await pool.query(
                 'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus) VALUES (?, ?, ?, ?, ?)',
-                [studentId, courseId, course.TotalFee, course.TotalFee, 'Completed']
+                [studentId, courseId, finalPaid, finalPaid, 'Completed']
             );
 
             // 3. Find the most recent Class of this Course to assign the student

@@ -3,6 +3,28 @@ const router = express.Router();
 const { pool } = require('../config/db');
 const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
+// @route   POST api/coupons/validate-public
+// @desc    Validate a coupon and return its discount percentage
+// @access  Public 
+router.post('/validate-public', async (req, res) => {
+    const { couponCode } = req.body;
+    if (!couponCode) return res.status(400).json({ message: 'Missing coupon code' });
+
+    try {
+        const [coupons] = await pool.query('SELECT * FROM Coupons WHERE Code = ? AND IsActive = 1', [couponCode]);
+        if (coupons.length === 0) return res.status(400).json({ message: 'Invalid or inactive coupon' });
+        
+        const coupon = coupons[0];
+        if (coupon.UsageCount >= coupon.UsageLimit) return res.status(400).json({ message: 'Coupon usage limit reached' });
+        if (coupon.ValidUntil && new Date() > new Date(coupon.ValidUntil)) return res.status(400).json({ message: 'Coupon has expired' });
+
+        res.json({ success: true, discountPercentage: parseFloat(coupon.DiscountPercentage), id: coupon.ID });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server Issue' });
+    }
+});
+
 // @route   POST api/coupons/apply-public
 // @desc    Apply a coupon during the public eCommerce checkout
 // @access  Public
@@ -61,10 +83,12 @@ router.post('/apply-public', async (req, res) => {
             } else {
                 // Failsafe in case Fee row didn't exist
                 const [courseRows] = await connection.query('SELECT TotalFee FROM Courses WHERE ID = ?', [courseId]);
-                const totalFee = courseRows[0] ? courseRows[0].TotalFee : 0;
+                const totalFee = courseRows[0] ? parseFloat(courseRows[0].TotalFee) : 0;
+                // Since 100% discount, AmountPaid is 0, but TotalFee is recorded (or AmountPaid=totalFee depending on ledger preference). We'll set AmountPaid to 0. 
+                // Wait, previous logic set AmountPaid to totalFee to mark it "Paid". Let's keep it 0 or totalFee. We'll set AmountPaid to 0 but status 'Completed' (100% scholarship).
                 await connection.query(
-                    'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus) VALUES (?, ?, ?, ?, "Paid")',
-                    [studentId, courseId, totalFee, totalFee]
+                    'INSERT INTO FeeManagement (StudentID, CourseID, TotalFee, AmountPaid, PaymentStatus) VALUES (?, ?, ?, ?, "Completed")',
+                    [studentId, courseId, totalFee, 0]
                 );
             }
 
