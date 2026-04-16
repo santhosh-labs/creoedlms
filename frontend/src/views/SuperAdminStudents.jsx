@@ -100,6 +100,60 @@ function BulkActionMenu({ selectedCount, onAction }) {
   );
 }
 
+/* ── Multi-Course Dropdown ───────────────────────────────────────── */
+function CourseChips({ enrollments }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  if (!enrollments || enrollments.length === 0) {
+    return <span style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 500 }}>Unassigned</span>;
+  }
+
+  const primary = enrollments[0];
+  const hasMore = enrollments.length > 1;
+
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }} ref={ref}>
+      <span style={{ fontSize: '13px', fontWeight: 500 }}>{primary.CourseName || 'Unassigned'}</span>
+      
+      {hasMore && (
+        <button 
+          onClick={() => setOpen(!open)}
+          style={{ background: 'var(--primary-light)', color: 'var(--primary)', border: 'none', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          +{enrollments.length - 1} More
+        </button>
+      )}
+
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '8px', background: '#0f172a', border: '1px solid #1e293b', padding: '14px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '320px' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 800, marginBottom: '2px', letterSpacing: '0.05em' }}>All Enrollments</div>
+          {enrollments.map((en, i) => (
+            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingBottom: i < enrollments.length - 1 ? '12px' : '0', borderBottom: i < enrollments.length - 1 ? '1px solid #1e293b' : 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                <span style={{ color: '#f8fafc', fontSize: '13px', fontWeight: 600, lineHeight: 1.4 }}>{en.CourseName || 'Unassigned'}</span>
+                <span className={`status-badge ${en.PaymentStatus === 'Paid' ? 'success' : en.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`} style={{ fontSize: '10px', padding: '2px 6px', flexShrink: 0 }}>
+                  {en.PaymentStatus || 'N/A'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', color: '#94a3b8' }}>
+                <span style={{ fontWeight: 500 }}>{en.BatchName || 'No Batch'}</span>
+                <span style={{ fontWeight: 600 }}>{en.AmountPaid != null ? `₹${Number(en.AmountPaid).toLocaleString()} / ₹${Number(en.TotalFee).toLocaleString()}` : '—'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DomainChips({ domains }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -771,28 +825,16 @@ export default function SuperAdminStudents({ user }) {
                     </td>
                     <td style={{ color: 'var(--text-sub)', fontSize: '12.5px' }}>{s.Email}</td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.Designation || '—'}</td>
-                    <td style={{ padding: 0 }}>
-                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
-                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '13px' }}>
-                          {en.CourseName || <span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span>}
-                        </div>
-                      )) : <div style={{ padding: '12px 14px' }}><span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span></div>}
+                    <td>
+                      <CourseChips enrollments={s.Enrollments} />
                     </td>
-                    <td style={{ padding: 0 }}>
-                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
-                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '12.5px' }}>
-                          {en.BatchName || '—'}
-                        </div>
-                      )) : <div style={{ padding: '12px 14px' }}>—</div>}
+                    <td style={{ fontSize: '12.5px' }}>
+                      {s.Enrollments && s.Enrollments.length > 0 ? (s.Enrollments[0].BatchName || '—') : '—'}
                     </td>
-                    <td style={{ padding: 0 }}>
-                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
-                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-                          {en.AmountPaid != null
-                            ? <span>₹{Number(en.AmountPaid).toLocaleString()} <span style={{ color: 'var(--text-muted)' }}>/ ₹{Number(en.TotalFee).toLocaleString()}</span></span>
-                            : '—'}
-                        </div>
-                      )) : <div style={{ padding: '12px 14px' }}>—</div>}
+                    <td style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                      {s.Enrollments && s.Enrollments.length > 0 && s.Enrollments[0].AmountPaid != null
+                        ? <span>₹{Number(s.Enrollments[0].AmountPaid).toLocaleString()} <span style={{ color: 'var(--text-muted)' }}>/ ₹{Number(s.Enrollments[0].TotalFee).toLocaleString()}</span></span>
+                        : '—'}
                     </td>
                     <td><DomainChips domains={s.InterestedDomains} /></td>
                     <td>
@@ -804,14 +846,12 @@ export default function SuperAdminStudents({ user }) {
                         <span className="status-badge danger">Inactive</span>
                       )}
                     </td>
-                    <td style={{ padding: 0 }}>
-                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
-                        <div key={idx} style={{ padding: '11px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                          <span className={`status-badge ${en.PaymentStatus === 'Paid' ? 'success' : en.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>
-                            {en.PaymentStatus || 'N/A'}
-                          </span>
-                        </div>
-                      )) : <div style={{ padding: '11px 14px' }}><span className="status-badge danger">N/A</span></div>}
+                    <td>
+                      {s.Enrollments && s.Enrollments.length > 0 ? (
+                        <span className={`status-badge ${s.Enrollments[0].PaymentStatus === 'Paid' ? 'success' : s.Enrollments[0].PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>
+                          {s.Enrollments[0].PaymentStatus || 'N/A'}
+                        </span>
+                      ) : <span className="status-badge danger">N/A</span>}
                     </td>
                     <td>
                       <ActionMenu items={menuItems} />
