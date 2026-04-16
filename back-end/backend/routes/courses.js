@@ -49,62 +49,65 @@ router.get('/public', async (req, res) => {
 router.get('/public/:id', async (req, res) => {
     try {
         const courseId = req.params.id;
-        // Fetch course details
-        const [courses] = await pool.query('SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE ID = ? AND (Visibility = 1 OR Visibility IS NULL)', [courseId]);
-        
-        if (courses.length === 0) {
-            return res.status(404).json({ message: 'Course not found' });
-        }
+        const [courses] = await pool.query(
+            'SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE ID = ? AND (Visibility = 1 OR Visibility IS NULL)',
+            [courseId]
+        );
+        if (courses.length === 0) return res.status(404).json({ message: 'Course not found' });
         const course = courses[0];
 
-        // Fetch most recent class for this course (for curriculum display)
+        // Fetch all classes for this course
         const [classes] = await pool.query(`
             SELECT c.ID, u.Name as TutorName
-            FROM Classes c 
-            LEFT JOIN Users u ON c.TutorID = u.ID 
+            FROM Classes c
+            LEFT JOIN Users u ON c.TutorID = u.ID
             WHERE c.CourseID = ?
-            ORDER BY c.ID DESC LIMIT 1
+            ORDER BY c.ID ASC
         `, [courseId]);
 
         let modulesData = [];
         let tutorName = null;
         let totalLessons = 0;
-        
+
         if (classes.length > 0) {
-            const classInfo = classes[0];
-            const classId = classInfo.ID;
-            tutorName = classInfo.TutorName || null;
+            tutorName = classes[classes.length - 1].TutorName || null;
+            const classIds = classes.map(c => c.ID);
 
-            const [modules] = await pool.query('SELECT ID, Title, Description FROM Modules WHERE ClassID = ?', [classId]);
-            const [lessons] = await pool.query(`
-                SELECT l.ID, l.ModuleID, l.Title, l.Type 
-                FROM Lessons l 
-                JOIN Modules m ON l.ModuleID = m.ID 
-                WHERE m.ClassID = ?
-            `, [classId]);
+            // Fetch all modules from all classes for this course
+            const [modules] = await pool.query(
+                `SELECT ID, Title, Description, ClassID FROM Modules WHERE ClassID IN (${classIds.map(() => '?').join(',')}) ORDER BY ClassID ASC, ID ASC`,
+                classIds
+            );
 
-            modulesData = modules.map(mod => {
-                const moduleLessons = lessons.filter(l => l.ModuleID === mod.ID);
-                totalLessons += moduleLessons.length;
-                return { ...mod, lessons: moduleLessons };
-            });
+            // Fetch all lessons for those modules
+            let lessons = [];
+            if (modules.length > 0) {
+                const moduleIds = modules.map(m => m.ID);
+                const [lessonRows] = await pool.query(
+                    `SELECT l.ID, l.ModuleID, l.Title, l.Type FROM Lessons l WHERE l.ModuleID IN (${moduleIds.map(() => '?').join(',')}) ORDER BY l.ID ASC`,
+                    moduleIds
+                );
+                lessons = lessonRows;
+            }
 
-            // If no lessons found, count modules as a fallback
-            if (totalLessons === 0 && modules.length > 0) {
-                totalLessons = modules.length;
+            // Group lessons by module (deduplicate by Title across classes)
+            const seenTitles = new Set();
+            modulesData = modules
+                .filter(mod => {
+                    if (seenTitles.has(mod.Title)) return false;
+                    seenTitles.add(mod.Title);
+                    return true;
+                })
+                .map(mod => {
+                    const moduleLessons = lessons.filter(l => l.ModuleID === mod.ID);
+                    totalLessons += moduleLessons.length;
+                    return { ...mod, lessons: moduleLessons };
+                });
+
+            if (totalLessons === 0 && modulesData.length > 0) {
+                totalLessons = modulesData.length;
             }
         }
-
-        // Also count total lessons across ALL classes for this course for accuracy
-        const [lessonCountResult] = await pool.query(`
-            SELECT COUNT(l.ID) as total
-            FROM Lessons l
-            JOIN Modules m ON l.ModuleID = m.ID
-            JOIN Classes c ON m.ClassID = c.ID
-            WHERE c.CourseID = ?
-        `, [courseId]);
-        const dbLessonCount = lessonCountResult[0]?.total || 0;
-        if (dbLessonCount > 0) totalLessons = dbLessonCount;
 
         course.curriculum = modulesData;
         course.TutorName = tutorName;
