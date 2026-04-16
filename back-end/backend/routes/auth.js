@@ -302,8 +302,8 @@ router.post('/forgot-password', async (req, res) => {
         );
 
         // Link to frontend reset page
-        // Format: http://localhost:5173/reset-password/TOKEN
-        const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+        // Format: https://academy.creoed.com/reset-password/TOKEN
+        const resetLink = `${process.env.FRONTEND_URL || 'https://academy.creoed.com'}/reset-password/${resetToken}`;
 
         const now = new Date();
         const expiryTime = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' });

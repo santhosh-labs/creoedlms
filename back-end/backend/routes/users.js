@@ -366,6 +366,19 @@ router.put('/students/:id/activate', verifyToken, authorizeRoles('Super Admin', 
     }
 });
 
+// @route   PUT api/users/students/:id/deactivate
+// @desc    Deactivate a student account (Super Admin)
+// @access  Private (Super Admin)
+router.put('/students/:id/deactivate', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        await pool.query('UPDATE Users SET IsActive = 0 WHERE ID = ?', [req.params.id]);
+        res.json({ message: 'Account deactivated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT api/users/:id
 // @desc    Update user profile fields (from website ProfilePage)
 // @access  Private

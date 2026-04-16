@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import {
   Users, AlertCircle, Plus, Upload, BookOpen, CheckSquare,
-  Search, Filter, ShieldCheck, KeyRound, Trash2, MoreVertical,
-  Tag, X
+  Search, Filter, ShieldCheck, ShieldAlert, KeyRound, Trash2, MoreVertical,
+  Tag, X, RefreshCw
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api';
@@ -129,6 +129,12 @@ export default function SuperAdminStudents({ user }) {
     if (!window.confirm('Activate this account? The user will be able to log in immediately.')) return;
     try { await api.put(`/users/students/${id}/activate`); fetchData(); }
     catch { alert('Failed to activate account.'); }
+  };
+
+  const handleDeactivateAccount = async (id) => {
+    if (!window.confirm('Deactivate this account? The user will not be able to log in.')) return;
+    try { await api.put(`/users/students/${id}/deactivate`); fetchData(); }
+    catch { alert('Failed to deactivate account.'); }
   };
 
   const handleSendResetPassword = async (email) => {
@@ -507,7 +513,9 @@ export default function SuperAdminStudents({ user }) {
             }}>
               Template
             </button>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleExcelUpload} ref={fileInputRef} style={{ display: 'none' }} />
+            <button className="btn btn-secondary" onClick={fetchData} title="Refresh Table Data">
+              <RefreshCw size={14} /> Refresh
+            </button>
             <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
               <Upload size={14} /> Import
             </button>
@@ -582,6 +590,12 @@ export default function SuperAdminStudents({ user }) {
                     label: 'Activate Account',
                     icon: <ShieldCheck size={14} />,
                     onClick: () => handleActivateAccount(s.ID)
+                  },
+                  isSuperAdmin && s.IsActive && {
+                    label: 'Deactivate Account',
+                    icon: <ShieldAlert size={14} />,
+                    danger: true,
+                    onClick: () => handleDeactivateAccount(s.ID)
                   },
                   isSuperAdmin && {
                     label: 'Send Password Reset',
