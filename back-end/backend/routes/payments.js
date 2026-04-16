@@ -8,8 +8,8 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_SdjnELA2TtsrD7';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || '9R8yO8S2VUxuLygTpJJFsbnm';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_Se81hx2CKtgm8C';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'BBcrmzkpfZt7x6wmm8zIEGUC';
 
 // Initialize Razorpay natively
 let razorpay = null;
