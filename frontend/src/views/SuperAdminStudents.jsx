@@ -73,11 +73,11 @@ function DomainChips({ domains }) {
         Noted
       </button>
       {open && (
-        <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px', background: '#fff', border: '1px solid var(--border)', padding: '8px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
-          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>Interested Domains</div>
+        <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '6px', background: '#0f172a', border: '1px solid #1e293b', padding: '10px 12px', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '190px' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: '#94a3b8', fontWeight: 800, marginBottom: '2px', letterSpacing: '0.05em' }}>Interested Domains</div>
           {list.map((d, i) => (
-            <span key={i} style={{ fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
-              <Tag size={10} color="var(--primary)"/> {d}
+            <span key={i} style={{ fontSize: '12.5px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc', fontWeight: 500 }}>
+              <Tag size={11} color="var(--primary)"/> {d}
             </span>
           ))}
         </div>
