@@ -1,7 +1,34 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowLeft, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Lock, ArrowRight } from 'lucide-react';
 import api from '../api';
+
+const FONT = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
+
+const inputStyle = {
+  width: '100%',
+  padding: '0.8rem 1rem 0.8rem 2.8rem',
+  border: '1.5px solid #e2e8f0',
+  borderRadius: '10px',
+  fontSize: '0.95rem',
+  fontFamily: FONT,
+  color: '#1e293b',
+  background: '#ffffff',
+  outline: 'none',
+  transition: 'border-color 0.2s',
+  boxSizing: 'border-box'
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '0.82rem',
+  fontWeight: 700,
+  color: '#64748b',
+  marginBottom: '0.4rem',
+  fontFamily: FONT,
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+};
 
 export default function Login() {
     const [email,    setEmail]    = useState('');
@@ -46,221 +73,110 @@ export default function Login() {
         }
     };
 
-    const field = (extra = {}) => ({
-        width: '100%',
-        boxSizing: 'border-box',
-        padding: '14px 16px 14px 46px',
-        fontSize: '15px',
-        border: '1.5px solid var(--border)',
-        borderRadius: '10px',
-        background: 'var(--bg)',
-        color: 'var(--text-main)',
-        outline: 'none',
-        fontFamily: 'inherit',
-        transition: 'border-color 0.18s, box-shadow 0.18s',
-        ...extra,
-    });
-
-    const onFocus = e => {
-        e.target.style.borderColor = '#1aae64';
-        e.target.style.boxShadow   = '0 0 0 3px rgba(26,174,100,0.12)';
-    };
-    const onBlur  = e => {
-        e.target.style.borderColor = 'var(--border)';
-        e.target.style.boxShadow   = 'none';
-    };
-
     return (
         <div style={{
+            background: '#f8fafc',
             minHeight: '100vh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'var(--bg)',
-            padding: '32px 20px',
-            fontFamily: "'Inter', sans-serif",
+            padding: '3rem 1rem'
         }}>
             <div style={{
+                background: '#ffffff',
+                border: '1px solid #ede9fe',
+                borderRadius: '1.5rem',
                 width: '100%',
-                maxWidth: '480px',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                padding: '52px 52px 44px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                maxWidth: '440px',
+                padding: '3rem 2.5rem',
+                boxShadow: '0 8px 40px rgba(124,58,237,0.08)'
             }}>
-
-                {/* Logo */}
-                <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-                    <img
-                        className="logo-dark"
-                        src="/CREO.ED (7).png"
-                        alt="Creoed LMS"
-                        style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
-                    />
-                    <img
-                        className="logo-light"
-                        src="/CREO.ED (9).png"
-                        alt="Creoed LMS"
-                        style={{ height: '56px', width: 'auto', objectFit: 'contain' }}
-                    />
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                    <img src="/CREO.ED (9).png" alt="Creoed Logo" style={{ height: '40px', marginBottom: '1.5rem' }} />
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f0a2e', marginBottom: '0.5rem', fontFamily: FONT, letterSpacing: '-0.02em' }}>
+                        {showForgot ? 'Reset password' : 'Welcome Back'}
+                    </h2>
+                    <p style={{ fontSize: '0.95rem', color: '#64748b', fontFamily: FONT }}>
+                        {showForgot ? "Enter your email for a reset link." : "Sign in to access your dashboard."}
+                    </p>
                 </div>
 
                 {!showForgot ? (
                     <>
-                        {/* Heading */}
-                        <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 8px', letterSpacing: '-0.4px' }}>
-                                Welcome back
-                            </h1>
-                            <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-                                Sign in to your Creoed LMS account
-                            </p>
-                        </div>
-
-                        {/* Error */}
                         {error && (
-                            <div style={{ padding: '13px 16px', background: 'var(--danger-bg)', color: 'var(--danger)', borderRadius: '9px', marginBottom: '22px', fontSize: '14px', fontWeight: 500, border: '1px solid rgba(239,68,68,0.15)' }}>
-                                {error}
+                            <div style={{ background: '#fef2f2', color: '#ef4444', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', display: 'flex', gap: '8px', alignItems: 'flex-start', fontFamily: FONT, fontSize: '0.9rem' }}>
+                                <span>{error}</span>
                             </div>
                         )}
 
-                        <form onSubmit={handleLogin} autoComplete="on">
-                            {/* Email */}
-                            <div style={{ marginBottom: '18px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
-                                    Email or Student ID
-                                </label>
+                        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>Email or Student ID</label>
                                 <div style={{ position: 'relative' }}>
-                                    <Mail size={16} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                                    <input
-                                        type="text"
-                                        placeholder="name@example.com or CR261234"
-                                        value={email}
-                                        onChange={e => setEmail(e.target.value)}
-                                        required
-                                        autoComplete="username"
-                                        style={field()}
-                                        onFocus={onFocus}
-                                        onBlur={onBlur}
-                                    />
+                                    <Mail size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
+                                    <input type="text" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="you@example.com or CR..." />
                                 </div>
                             </div>
 
-                            {/* Password */}
-                            <div style={{ marginBottom: '14px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
-                                    Password
-                                </label>
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>Password</label>
                                 <div style={{ position: 'relative' }}>
-                                    <Lock size={16} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                                    <input
-                                        type={showPass ? 'text' : 'password'}
-                                        placeholder="Enter your password"
-                                        value={password}
-                                        onChange={e => setPassword(e.target.value)}
-                                        required
-                                        autoComplete="current-password"
-                                        style={field({ paddingRight: '48px' })}
-                                        onFocus={onFocus}
-                                        onBlur={onBlur}
-                                    />
+                                    <Lock size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
+                                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required style={{...inputStyle, paddingRight: '2.8rem'}} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="••••••••" />
                                     <button type="button" onClick={() => setShowPass(v => !v)} tabIndex={-1}
-                                        style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '4px' }}>
-                                        {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 0 }}>
+                                        {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+                                    <button type="button" onClick={() => setShowForgot(true)}
+                                        style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
+                                        Forgot password?
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Forgot link */}
-                            <div style={{ textAlign: 'right', marginBottom: '28px' }}>
-                                <button type="button" onClick={() => setShowForgot(true)}
-                                    style={{ background: 'none', border: 'none', color: '#1aae64', fontSize: '13.5px', fontWeight: 500, cursor: 'pointer', padding: '2px 0', fontFamily: 'inherit' }}>
-                                    Forgot password?
-                                </button>
-                            </div>
-
-                            {/* Submit */}
-                            <button type="submit" disabled={loading}
-                                style={{
-                                    width: '100%', padding: '14px',
-                                    background: loading ? 'var(--border)' : '#1aae64',
-                                    color: '#fff', border: 'none', borderRadius: '10px',
-                                    fontSize: '15px', fontWeight: 600,
-                                    cursor: loading ? 'not-allowed' : 'pointer',
-                                    letterSpacing: '0.1px',
-                                    transition: 'background 0.18s',
-                                    fontFamily: 'inherit',
-                                }}
-                                onMouseOver={e => { if (!loading) e.currentTarget.style.background = '#159353'; }}
-                                onMouseOut={e =>  { if (!loading) e.currentTarget.style.background = '#1aae64'; }}
-                            >
-                                {loading ? 'Signing in…' : 'Sign in'}
+                            <button type="submit" disabled={loading} style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '9999px', padding: '0.85rem', fontSize: '1rem', fontWeight: 700, fontFamily: FONT, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: '0.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: loading ? 0.7 : 1 }}>
+                                {loading ? 'Signing in...' : 'Sign In'} {!loading && <ArrowRight size={18} />}
                             </button>
                         </form>
                     </>
                 ) : (
                     <>
-                        {/* Back */}
-                        <button onClick={() => { setShowForgot(false); setForgotMessage({ type: '', text: '' }); setForgotEmail(''); }}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 500, padding: '0 0 24px', fontFamily: 'inherit' }}>
-                            <ArrowLeft size={14} /> Back to sign in
-                        </button>
-
-                        <div style={{ marginBottom: '28px', textAlign: 'center' }}>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 8px' }}>Reset password</h1>
-                            <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>
-                                Enter your registered email. We'll send a reset link.
-                            </p>
-                        </div>
-
                         {forgotMessage.text && (
-                            <div style={{ padding: '13px 16px', background: forgotMessage.type === 'error' ? 'var(--danger-bg)' : 'rgba(26,174,100,0.08)', color: forgotMessage.type === 'error' ? 'var(--danger)' : '#1aae64', borderRadius: '9px', marginBottom: '20px', fontSize: '14px', fontWeight: 500, border: `1px solid ${forgotMessage.type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(26,174,100,0.2)'}` }}>
-                                {forgotMessage.text}
+                            <div style={{ background: forgotMessage.type === 'error' ? '#fef2f2' : '#dcfce7', color: forgotMessage.type === 'error' ? '#ef4444' : '#166534', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', display: 'flex', gap: '8px', alignItems: 'flex-start', fontFamily: FONT, fontSize: '0.9rem' }}>
+                                <span>{forgotMessage.text}</span>
                             </div>
                         )}
 
-                        <form onSubmit={handleForgot}>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
-                                    Email address
-                                </label>
+                        <form onSubmit={handleForgot} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>Email Address</label>
                                 <div style={{ position: 'relative' }}>
-                                    <Mail size={16} style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                                    <input
-                                        type="email"
-                                        placeholder="name@example.com"
-                                        value={forgotEmail}
-                                        onChange={e => setForgotEmail(e.target.value)}
-                                        required
-                                        style={field()}
-                                        onFocus={onFocus}
-                                        onBlur={onBlur}
-                                    />
+                                    <Mail size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
+                                    <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="you@example.com" />
                                 </div>
                             </div>
-                            <button type="submit" disabled={forgotLoading}
-                                style={{
-                                    width: '100%', padding: '14px',
-                                    background: forgotLoading ? 'var(--border)' : '#1aae64',
-                                    color: '#fff', border: 'none', borderRadius: '10px',
-                                    fontSize: '15px', fontWeight: 600,
-                                    cursor: forgotLoading ? 'not-allowed' : 'pointer',
-                                    transition: 'background 0.18s', fontFamily: 'inherit',
-                                }}>
-                                {forgotLoading ? 'Sending…' : 'Send reset link'}
+                            
+                            <button type="submit" disabled={forgotLoading} style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '9999px', padding: '0.85rem', fontSize: '1rem', fontWeight: 700, fontFamily: FONT, cursor: forgotLoading ? 'not-allowed' : 'pointer', transition: 'background 0.2s', marginTop: '0.5rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', opacity: forgotLoading ? 0.7 : 1 }}>
+                                {forgotLoading ? 'Sending...' : 'Send Reset Link'}
                             </button>
                         </form>
+
+                        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+                            <button onClick={() => { setShowForgot(false); setForgotMessage({ type: '', text: '' }); setForgotEmail(''); }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600, fontFamily: FONT }}>
+                                <ArrowLeft size={16} /> Back to sign in
+                            </button>
+                        </div>
                     </>
                 )}
 
-                {/* Footer */}
-                <p style={{ marginTop: '36px', fontSize: '12.5px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                <div style={{ marginTop: '2rem', textAlign: 'center', fontFamily: FONT, fontSize: '0.8rem', color: '#94a3b8' }}>
                     © {new Date().getFullYear()} Creoed LMS. All rights reserved.
-                </p>
+                </div>
             </div>
-
-            <style>{`input::placeholder { color: var(--text-muted); opacity: 1; }`}</style>
+            <style>{`input::placeholder { color: #94a3b8; opacity: 1; }`}</style>
         </div>
     );
 }
