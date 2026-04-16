@@ -579,16 +579,22 @@ export default function SuperAdminStudents({ user }) {
   /* ══════════════════════════════════════════════════════════════
      MAIN TABLE VIEW
   ══════════════════════════════════════════════════════════════ */
-  const filteredStudents = students.filter(s =>
-    (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
-    (s.Name || '').toLowerCase().includes(filters.name.toLowerCase()) &&
-    (s.Email || '').toLowerCase().includes(filters.email.toLowerCase()) &&
-    (s.Phone || '').toLowerCase().includes(filters.phone.toLowerCase()) &&
-    (s.Designation || '').toLowerCase().includes(filters.designation.toLowerCase()) &&
-    (s.CourseName || '').toLowerCase().includes(filters.course.toLowerCase()) &&
-    (s.BatchName || '').toLowerCase().includes(filters.batch.toLowerCase()) &&
-    (s.PaymentStatus || '').toLowerCase().includes(filters.status.toLowerCase())
-  );
+  const filteredStudents = students.filter(s => {
+    const enrollmentsStr = (s.Enrollments || []).map(e => e.CourseName).join(' ').toLowerCase();
+    const batchStr = (s.Enrollments || []).map(e => e.BatchName).join(' ').toLowerCase();
+    const statusStr = (s.Enrollments || []).map(e => e.PaymentStatus).join(' ').toLowerCase();
+
+    return (
+      (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
+      (s.Name || '').toLowerCase().includes(filters.name.toLowerCase()) &&
+      (s.Email || '').toLowerCase().includes(filters.email.toLowerCase()) &&
+      (s.Phone || '').toLowerCase().includes(filters.phone.toLowerCase()) &&
+      (s.Designation || '').toLowerCase().includes(filters.designation.toLowerCase()) &&
+      (enrollmentsStr.includes(filters.course.toLowerCase()) || (filters.course === '' && s.Enrollments?.length === 0)) &&
+      (batchStr.includes(filters.batch.toLowerCase()) || (filters.batch === '' && s.Enrollments?.length === 0)) &&
+      (statusStr.includes(filters.status.toLowerCase()) || (filters.status === '' && s.Enrollments?.length === 0))
+    );
+  });
 
   return (
     <div className="content-wrapper">
@@ -765,16 +771,28 @@ export default function SuperAdminStudents({ user }) {
                     </td>
                     <td style={{ color: 'var(--text-sub)', fontSize: '12.5px' }}>{s.Email}</td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.Designation || '—'}</td>
-                    <td>
-                      {s.CourseName
-                        ? <span style={{ fontSize: '13px' }}>{s.CourseName}</span>
-                        : <span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span>}
+                    <td style={{ padding: 0 }}>
+                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
+                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '13px' }}>
+                          {en.CourseName || <span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span>}
+                        </div>
+                      )) : <div style={{ padding: '12px 14px' }}><span style={{ color: 'var(--warning)', fontSize: '12px', fontWeight: 500 }}>Unassigned</span></div>}
                     </td>
-                    <td style={{ fontSize: '12.5px' }}>{s.BatchName || '—'}</td>
-                    <td style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-                      {s.AmountPaid != null
-                        ? <span>₹{Number(s.AmountPaid).toLocaleString()} <span style={{ color: 'var(--text-muted)' }}>/ ₹{Number(s.TotalFee).toLocaleString()}</span></span>
-                        : '—'}
+                    <td style={{ padding: 0 }}>
+                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
+                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '12.5px' }}>
+                          {en.BatchName || '—'}
+                        </div>
+                      )) : <div style={{ padding: '12px 14px' }}>—</div>}
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
+                        <div key={idx} style={{ padding: '12px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none', fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                          {en.AmountPaid != null
+                            ? <span>₹{Number(en.AmountPaid).toLocaleString()} <span style={{ color: 'var(--text-muted)' }}>/ ₹{Number(en.TotalFee).toLocaleString()}</span></span>
+                            : '—'}
+                        </div>
+                      )) : <div style={{ padding: '12px 14px' }}>—</div>}
                     </td>
                     <td><DomainChips domains={s.InterestedDomains} /></td>
                     <td>
@@ -786,10 +804,14 @@ export default function SuperAdminStudents({ user }) {
                         <span className="status-badge danger">Inactive</span>
                       )}
                     </td>
-                    <td>
-                      <span className={`status-badge ${s.PaymentStatus === 'Paid' ? 'success' : s.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>
-                        {s.PaymentStatus || 'N/A'}
-                      </span>
+                    <td style={{ padding: 0 }}>
+                      {s.Enrollments && s.Enrollments.length > 0 ? s.Enrollments.map((en, idx) => (
+                        <div key={idx} style={{ padding: '11px 14px', borderBottom: idx < s.Enrollments.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <span className={`status-badge ${en.PaymentStatus === 'Paid' ? 'success' : en.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>
+                            {en.PaymentStatus || 'N/A'}
+                          </span>
+                        </div>
+                      )) : <div style={{ padding: '11px 14px' }}><span className="status-badge danger">N/A</span></div>}
                     </td>
                     <td>
                       <ActionMenu items={menuItems} />

@@ -162,30 +162,80 @@ router.get('/my-tutors', verifyToken, authorizeRoles('Student'), async (req, res
 // @access  Private (Admin, Super Admin, Tutor)
 router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tutor'), async (req, res) => {
     try {
-        let query = `
+        let studentQuery = `
             SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone,
                    u.IsActive, u.IsLocked, u.CollegeName,
                    COALESCE(u.Designation, '') as Designation,
                    COALESCE(u.Organisation, '') as Organisation,
-                   COALESCE(u.InterestedDomains, '') as InterestedDomains,
-                   fm.CourseID, c.Name as CourseName, c2.BatchName, c2.BatchCode,
-                   fm.TotalFee, fm.AmountPaid, fm.PaymentStatus
+                   COALESCE(u.InterestedDomains, '') as InterestedDomains
             FROM Users u
             JOIN Roles r ON u.RoleID = r.ID
-            LEFT JOIN (SELECT StudentID, MAX(ClassID) as ClassID FROM ClassStudents GROUP BY StudentID) cs ON cs.StudentID = u.ID
-            LEFT JOIN Classes c2 ON c2.ID = cs.ClassID
-            LEFT JOIN (SELECT StudentID, MAX(ID) as MaxFeeID FROM FeeManagement GROUP BY StudentID) fm_max ON fm_max.StudentID = u.ID
-            LEFT JOIN FeeManagement fm ON fm.ID = fm_max.MaxFeeID
-            LEFT JOIN Courses c ON c.ID = COALESCE(fm.CourseID, c2.CourseID)
             WHERE r.RoleName = 'Student'
         `;
+        let params = [];
+
         if (req.user.role === 'Tutor') {
-            query += ` AND c2.TutorID = ?`;
-            const [rows] = await pool.query(query, [req.user.id]);
-            return res.json(rows);
+            studentQuery = `
+                SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone,
+                       u.IsActive, u.IsLocked, u.CollegeName,
+                       COALESCE(u.Designation, '') as Designation,
+                       COALESCE(u.Organisation, '') as Organisation,
+                       COALESCE(u.InterestedDomains, '') as InterestedDomains
+                FROM Users u
+                JOIN Roles r ON u.RoleID = r.ID
+                JOIN ClassStudents cs ON cs.StudentID = u.ID
+                JOIN Classes cl ON cl.ID = cs.ClassID
+                WHERE r.RoleName = 'Student' AND cl.TutorID = ?
+                GROUP BY u.ID
+            `;
+            params = [req.user.id];
         }
-        const [rows] = await pool.query(query);
-        res.json(rows);
+
+        const [students] = await pool.query(studentQuery, params);
+
+        const [fees] = await pool.query(`
+            SELECT fm.StudentID, fm.CourseID, c.Name as CourseName, fm.TotalFee, fm.AmountPaid, fm.PaymentStatus 
+            FROM FeeManagement fm 
+            LEFT JOIN Courses c ON c.ID = fm.CourseID
+        `);
+        
+        const [classes] = await pool.query(`
+            SELECT cs.StudentID, cl.CourseID, c.Name as CourseName, cl.BatchName 
+            FROM ClassStudents cs 
+            JOIN Classes cl ON cs.ClassID = cl.ID 
+            LEFT JOIN Courses c ON c.ID = cl.CourseID
+        `);
+
+        const results = students.map(st => {
+            const stFees = fees.filter(f => f.StudentID === st.ID);
+            const stClasses = classes.filter(c => c.StudentID === st.ID);
+            
+            const enrollmentMap = {};
+            stFees.forEach(f => {
+                enrollmentMap[f.CourseID] = { ...f, BatchName: null };
+            });
+            stClasses.forEach(c => {
+                if (!enrollmentMap[c.CourseID]) {
+                    enrollmentMap[c.CourseID] = { 
+                        StudentID: st.ID, 
+                        CourseID: c.CourseID, 
+                        CourseName: c.CourseName,
+                        TotalFee: null, AmountPaid: null, PaymentStatus: null, 
+                        BatchName: c.BatchName 
+                    };
+                } else {
+                    enrollmentMap[c.CourseID].BatchName = c.BatchName;
+                    if (!enrollmentMap[c.CourseID].CourseName) enrollmentMap[c.CourseID].CourseName = c.CourseName;
+                }
+            });
+            
+            return {
+                ...st,
+                Enrollments: Object.values(enrollmentMap)
+            };
+        });
+
+        res.json(results);
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
