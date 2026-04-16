@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   Users, AlertCircle, Plus, Upload, BookOpen, CheckSquare,
   Search, Filter, ShieldCheck, ShieldAlert, KeyRound, Trash2, MoreVertical,
-  Tag, X, RefreshCw
+  Tag, X, RefreshCw, Lock, Unlock
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api';
@@ -49,16 +49,39 @@ function ActionMenu({ items }) {
   );
 }
 
-/* ── Domain chips component ─────────────────────────────────────── */
 function DomainChips({ domains }) {
-  if (!domains) return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>;
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  if (!domains) return <span className="status-badge" style={{ background: 'var(--bg)', color: 'var(--text-muted)' }}>Not Noted</span>;
   const list = Array.isArray(domains) ? domains : domains.split(',').map(d => d.trim()).filter(Boolean);
-  if (!list.length) return <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>—</span>;
+  if (!list.length) return <span className="status-badge" style={{ background: 'var(--bg)', color: 'var(--text-muted)' }}>Not Noted</span>;
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '220px' }}>
-      {list.map((d, i) => (
-        <span key={i} className="domain-chip"><Tag size={9} /> {d}</span>
-      ))}
+    <div style={{ position: 'relative' }} ref={ref}>
+      <button 
+        className="status-badge" 
+        style={{ background: 'var(--primary-light)', color: 'var(--primary)', cursor: 'pointer', border: 'none', padding: '4px 10px' }}
+        onClick={() => setOpen(!open)}
+      >
+        Noted
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 50, top: '100%', left: 0, marginTop: '4px', background: '#fff', border: '1px solid var(--border)', padding: '8px', borderRadius: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: '180px' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '2px' }}>Interested Domains</div>
+          {list.map((d, i) => (
+            <span key={i} style={{ fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-main)' }}>
+              <Tag size={10} color="var(--primary)"/> {d}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -86,7 +109,7 @@ export default function SuperAdminStudents({ user }) {
     classId: '', totalFee: '', feePaid: '', dob: '', gender: '', city: '', country: ''
   });
   const [assignData, setAssignData] = useState({ courseId: '', classId: '', totalFee: '' });
-  const [filters, setFilters] = useState({ id: '', name: '', email: '', course: '', batch: '', status: '' });
+  const [filters, setFilters] = useState({ id: '', name: '', email: '', course: '', batch: '', status: '', designation: '', phone: '' });
   const fileInputRef = useRef(null);
 
   /* ── Data fetching ──────────────────────────────────────────── */
@@ -143,6 +166,50 @@ export default function SuperAdminStudents({ user }) {
       await api.post('/auth/forgot-password', { email });
       alert('Password reset link sent to ' + email);
     } catch { alert('Failed to send reset link.'); }
+  };
+
+  const handleLockAccount = async (id) => {
+    if (!window.confirm('Lock this account? They will be logged out and cannot sign in until unlocked.')) return;
+    try { await api.put(`/users/students/${id}/lock`); fetchData(); }
+    catch { alert('Failed to lock account.'); }
+  };
+
+  const handleUnlockAccount = async (id) => {
+    if (!window.confirm('Unlock this account? They will be able to sign in again.')) return;
+    try { await api.put(`/users/students/${id}/unlock`); fetchData(); }
+    catch { alert('Failed to unlock account.'); }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (!selectedStudents.length) return;
+    if (action === 'assign') {
+      setShowAssignModal(true);
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to perform this bulk action on ${selectedStudents.length} students?`)) return;
+    
+    setLoading(true);
+    let successCount = 0;
+    try {
+      if (action === 'delete') {
+         await Promise.all(selectedStudents.map(id => api.delete(`/users/students/${id}`).then(() => successCount++).catch(e => console.error(e))));
+      } else if (action === 'activate') {
+         await Promise.all(selectedStudents.map(id => api.put(`/users/students/${id}/activate`).then(() => successCount++).catch(e => console.error(e))));
+      } else if (action === 'deactivate') {
+         await Promise.all(selectedStudents.map(id => api.put(`/users/students/${id}/deactivate`).then(() => successCount++).catch(e => console.error(e))));
+      } else if (action === 'lock') {
+         await Promise.all(selectedStudents.map(id => api.put(`/users/students/${id}/lock`).then(() => successCount++).catch(e => console.error(e))));
+      } else if (action === 'reset_password') {
+         const list = students.filter(s => selectedStudents.includes(s.ID));
+         await Promise.all(list.map(s => api.post('/auth/forgot-password', { email: s.Email }).then(() => successCount++).catch(e => console.error(e))));
+      }
+      alert(`Bulk action completed! Successful: ${successCount}/${selectedStudents.length}`);
+    } catch (err) {
+      alert('Error performing bulk action');
+    }
+    setSelectedStudents([]);
+    fetchData();
   };
 
   const handleBulkAssign = async () => {
@@ -465,6 +532,8 @@ export default function SuperAdminStudents({ user }) {
     (s.StudentCode || '').toLowerCase().includes(filters.id.toLowerCase()) &&
     (s.Name || '').toLowerCase().includes(filters.name.toLowerCase()) &&
     (s.Email || '').toLowerCase().includes(filters.email.toLowerCase()) &&
+    (s.Phone || '').toLowerCase().includes(filters.phone.toLowerCase()) &&
+    (s.Designation || '').toLowerCase().includes(filters.designation.toLowerCase()) &&
     (s.CourseName || '').toLowerCase().includes(filters.course.toLowerCase()) &&
     (s.BatchName || '').toLowerCase().includes(filters.batch.toLowerCase()) &&
     (s.PaymentStatus || '').toLowerCase().includes(filters.status.toLowerCase())
@@ -495,9 +564,20 @@ export default function SuperAdminStudents({ user }) {
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {selectedStudents.length > 0 && (
-              <button className="btn btn-secondary" onClick={() => setShowAssignModal(true)} style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}>
-                <CheckSquare size={14} /> Assign ({selectedStudents.length})
-              </button>
+              <select 
+                className="form-input" 
+                style={{ height: '34px', fontSize: '12px', padding: '0 10px', borderColor: 'var(--primary)', color: 'var(--primary)', fontWeight: 600, background: '#fff' }}
+                onChange={(e) => { handleBulkAction(e.target.value); e.target.value = ""; }}
+                defaultValue=""
+              >
+                <option value="" disabled>Bulk Action ({selectedStudents.length})</option>
+                <option value="assign">Change Course</option>
+                <option value="activate">Bulk Activate</option>
+                <option value="deactivate">Bulk Deactivate</option>
+                <option value="lock">Bulk Lock</option>
+                <option value="reset_password">Send Password Reset</option>
+                <option value="delete">Bulk Delete</option>
+              </select>
             )}
             <button className="btn btn-secondary" onClick={() => {
               const courseInfo = courses.map(c => `CourseID ${c.ID}=${c.Name}`).join(' | ');
@@ -525,16 +605,15 @@ export default function SuperAdminStudents({ user }) {
           </div>
         </div>
 
-        {/* Filters */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '12px', fontWeight: 600, marginRight: '6px', gap: '4px' }}>
             <Filter size={13} /> Filters
           </div>
-          {[['id', 'Student ID', 120], ['name', 'Name', 150], ['email', 'Email', 170], ['course', 'Course', 140], ['batch', 'Batch', 130]].map(([key, ph, w]) => (
+          {[['id', 'ID', 100], ['name', 'Name', 130], ['email', 'Email', 140], ['phone', 'Phone', 120], ['designation', 'Designation', 130], ['course', 'Course', 120], ['batch', 'Batch', 110]].map(([key, ph, w]) => (
             <div key={key} style={{ position: 'relative', width: w }}>
               <Search size={12} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input type="text" placeholder={ph} value={filters[key]} onChange={e => setFilters({ ...filters, [key]: e.target.value })}
-                className="form-input" style={{ paddingLeft: '28px', fontSize: '12px', height: '34px', padding: '0 10px 0 28px' }} />
+                className="form-input" style={{ paddingLeft: '28px', fontSize: '11px', height: '34px', padding: '0 10px 0 28px' }} />
             </div>
           ))}
           <select value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}
@@ -545,7 +624,7 @@ export default function SuperAdminStudents({ user }) {
             <option value="Partial">Partial</option>
           </select>
           {Object.values(filters).some(Boolean) && (
-            <button className="btn btn-ghost" onClick={() => setFilters({ id: '', name: '', email: '', course: '', batch: '', status: '' })} style={{ height: '34px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', fontSize: '12px' }}>
+            <button className="btn btn-ghost" onClick={() => setFilters({ id: '', name: '', email: '', course: '', batch: '', status: '', designation: '', phone: '' })} style={{ height: '34px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)', fontSize: '12px' }}>
               <X size={12} /> Clear
             </button>
           )}
@@ -597,6 +676,17 @@ export default function SuperAdminStudents({ user }) {
                     danger: true,
                     onClick: () => handleDeactivateAccount(s.ID)
                   },
+                  isSuperAdmin && !s.IsLocked && {
+                    label: 'Lock Account',
+                    icon: <Lock size={14} />,
+                    danger: true,
+                    onClick: () => handleLockAccount(s.ID)
+                  },
+                  isSuperAdmin && s.IsLocked && {
+                    label: 'Unlock Account',
+                    icon: <Unlock size={14} />,
+                    onClick: () => handleUnlockAccount(s.ID)
+                  },
                   isSuperAdmin && {
                     label: 'Send Password Reset',
                     icon: <KeyRound size={14} />,
@@ -647,9 +737,13 @@ export default function SuperAdminStudents({ user }) {
                     </td>
                     <td><DomainChips domains={s.InterestedDomains} /></td>
                     <td>
-                      {s.IsActive
-                        ? <span className="status-badge success">Active</span>
-                        : <span className="status-badge danger">Inactive</span>}
+                      {s.IsLocked ? (
+                        <span className="status-badge danger"><Lock size={10} style={{ marginRight: 4 }}/> Locked</span>
+                      ) : s.IsActive ? (
+                        <span className="status-badge success">Active</span>
+                      ) : (
+                        <span className="status-badge danger">Inactive</span>
+                      )}
                     </td>
                     <td>
                       <span className={`status-badge ${s.PaymentStatus === 'Paid' ? 'success' : s.PaymentStatus === 'Partial' ? 'warning' : 'danger'}`}>

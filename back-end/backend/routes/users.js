@@ -164,7 +164,7 @@ router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tut
     try {
         let query = `
             SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone,
-                   u.IsActive, u.CollegeName,
+                   u.IsActive, u.IsLocked, u.CollegeName,
                    COALESCE(u.Designation, '') as Designation,
                    COALESCE(u.Organisation, '') as Organisation,
                    COALESCE(u.InterestedDomains, '') as InterestedDomains,
@@ -174,8 +174,8 @@ router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tut
             JOIN Roles r ON u.RoleID = r.ID
             LEFT JOIN ClassStudents cs ON cs.StudentID = u.ID
             LEFT JOIN Classes c2 ON c2.ID = cs.ClassID
-            LEFT JOIN Courses c ON c.ID = c2.CourseID
-            LEFT JOIN FeeManagement fm ON fm.StudentID = u.ID AND fm.CourseID = c.ID
+            LEFT JOIN FeeManagement fm ON fm.StudentID = u.ID
+            LEFT JOIN Courses c ON (c.ID = fm.CourseID OR c.ID = c2.CourseID)
             WHERE r.RoleName = 'Student'
         `;
         if (req.user.role === 'Tutor') {
@@ -373,6 +373,32 @@ router.put('/students/:id/deactivate', verifyToken, authorizeRoles('Super Admin'
     try {
         await pool.query('UPDATE Users SET IsActive = 0 WHERE ID = ?', [req.params.id]);
         res.json({ message: 'Account deactivated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/users/students/:id/lock
+// @desc    Lock a student account (Super Admin)
+// @access  Private (Super Admin)
+router.put('/students/:id/lock', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        await pool.query('UPDATE Users SET IsLocked = 1 WHERE ID = ?', [req.params.id]);
+        res.json({ message: 'Account locked successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/users/students/:id/unlock
+// @desc    Unlock a student account (Super Admin)
+// @access  Private (Super Admin)
+router.put('/students/:id/unlock', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req, res) => {
+    try {
+        await pool.query('UPDATE Users SET IsLocked = 0 WHERE ID = ?', [req.params.id]);
+        res.json({ message: 'Account unlocked successfully' });
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');

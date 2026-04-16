@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
     try {
         // Allow login via Email OR StudentCode
         const [rows] = await pool.query(`
-            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.PasswordHash, u.RoleID, u.IsActive, r.RoleName
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.PasswordHash, u.RoleID, u.IsActive, u.IsLocked, r.RoleName
             FROM Users u
             JOIN Roles r ON u.RoleID = r.ID
             WHERE u.Email = ? OR u.StudentCode = ?
@@ -43,6 +43,10 @@ router.post('/login', async (req, res) => {
 
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        if (user.IsLocked) {
+            return res.status(403).json({ message: 'Your account has been locked. Please contact support.' });
         }
 
         if (user.IsActive === 0) {
