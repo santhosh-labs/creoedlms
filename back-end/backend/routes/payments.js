@@ -44,7 +44,7 @@ router.post('/create-order', verifyToken, async (req, res) => {
         const options = {
             amount: amountInPaise,
             currency: "INR",
-            receipt: `receipt_order_${Date.now()}_${studentId}_${courseId}`
+            receipt: `rcpt_${Date.now()}_${studentId}`.slice(0, 40)
         };
 
         const order = await razorpay.orders.create(options);
