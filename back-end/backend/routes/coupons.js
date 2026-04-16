@@ -202,4 +202,17 @@ router.put('/:id', verifyToken, authorizeRoles('Admin', 'Super Admin'), async (r
     }
 });
 
+// @route   DELETE api/coupons/:id
+// @desc    Delete a coupon
+// @access  Private (Admin, Super Admin)
+router.delete('/:id', verifyToken, authorizeRoles('Admin', 'Super Admin'), async (req, res) => {
+    try {
+        await pool.query('DELETE FROM Coupons WHERE ID = ?', [req.params.id]);
+        res.json({ message: 'Coupon deleted successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;
