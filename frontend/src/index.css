@@ -181,10 +181,12 @@ button {
   display: none;
 }
 
+/* Collapsed: hide the logo container gap (no logo shown) */
 .sidebar.collapsed .logo-container {
   justify-content: center;
   padding: 0;
   overflow: hidden;
+  margin-bottom: 12px;  /* tighter gap since no logo */
 }
 
 /* Clamp logo to fit collapsed width */

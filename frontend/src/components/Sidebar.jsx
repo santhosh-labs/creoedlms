@@ -63,14 +63,7 @@ export default function Sidebar({ role, mobileOpen, onCloseMobile }) {
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="logo-container">
-                {collapsed ? (
-                    /* Compact icon fits perfectly in 68px collapsed sidebar */
-                    <img
-                        src="/CREO.ED (7).png"
-                        alt="Creoed"
-                        style={{ height: '32px', width: '32px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
-                    />
-                ) : (
+                {!collapsed && (
                     <>
                         <img
                             className="logo-dark"
