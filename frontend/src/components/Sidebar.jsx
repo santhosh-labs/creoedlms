@@ -65,7 +65,7 @@ export default function Sidebar({ role, mobileOpen, onCloseMobile }) {
             <div className="logo-container">
                 <img
                     className="logo-dark"
-                    src="/CREOED (2).png"
+                    src="/CREO.ED (7).png"
                     alt="Creoed"
                     style={{ height: collapsed ? '32px' : '38px', width: 'auto', objectFit: 'contain', transition: 'height 0.2s', display: 'block' }}
                 />
