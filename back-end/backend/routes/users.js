@@ -498,13 +498,57 @@ router.put('/students/:id/unlock', verifyToken, authorizeRoles('Super Admin', 'A
     }
 });
 
+// @route   PUT api/users/profile
+// @desc    Update editable user profile fields (from LMS Settings page)
+// @access  Private
+router.put('/profile', verifyToken, async (req, res) => {
+    const { dateOfBirth, gender, city, country, collegeName } = req.body;
+    try {
+        await pool.query(
+            `UPDATE Users SET DateOfBirth = ?, Gender = ?, City = ?, Country = ?, CollegeName = ? WHERE ID = ?`,
+            [dateOfBirth || null, gender || null, city || null, country || null, collegeName || null, req.user.id]
+        );
+        res.json({ message: 'Profile updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/users/change-password
+// @desc    Change password for logged in user
+// @access  Private
+router.put('/change-password', verifyToken, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: 'Both current and new passwords are required' });
+    }
+
+    try {
+        const [rows] = await pool.query(`SELECT PasswordHash FROM Users WHERE ID = ?`, [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, rows[0].PasswordHash);
+        if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(newPassword, salt);
+        await pool.query(`UPDATE Users SET PasswordHash = ? WHERE ID = ?`, [hash, req.user.id]);
+
+        res.json({ message: 'Password changed successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   PUT api/users/:id
-// @desc    Update user profile fields (from website ProfilePage)
+// @desc    Update user profile fields (from website ProfilePage) — MUST stay below specific routes
 // @access  Private
 router.put('/:id', verifyToken, async (req, res) => {
     const { Name, Phone, Gender, DateOfBirth, City, Country, CollegeName, interestedDomains } = req.body;
     try {
-        // interestedDomains from onboarding survey — save as comma-separated string
         const domainsStr = Array.isArray(interestedDomains)
             ? interestedDomains.join(',')
             : (interestedDomains || null);
@@ -577,51 +621,6 @@ router.put('/students/:id/change-course', verifyToken, authorizeRoles('Super Adm
         res.status(500).send('Server Error');
     } finally {
         connection.release();
-    }
-});
-
-// @route   PUT api/users/profile
-// @desc    Update editable user profile fields
-// @access  Private
-router.put('/profile', verifyToken, async (req, res) => {
-    const { dateOfBirth, gender, city, country, collegeName } = req.body;
-    try {
-        await pool.query(
-            `UPDATE Users SET DateOfBirth = ?, Gender = ?, City = ?, Country = ?, CollegeName = ? WHERE ID = ?`,
-            [dateOfBirth || null, gender || null, city || null, country || null, collegeName || null, req.user.id]
-        );
-        res.json({ message: 'Profile updated successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
-    }
-});
-
-// @route   PUT api/users/change-password
-// @desc    Change password for logged in user
-// @access  Private
-router.put('/change-password', verifyToken, async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: 'Both current and new passwords are required' });
-    }
-
-    try {
-        const [rows] = await pool.query(`SELECT PasswordHash FROM Users WHERE ID = ?`, [req.user.id]);
-        if (rows.length === 0) return res.status(404).json({ message: 'User not found' });
-
-        const isMatch = await bcrypt.compare(currentPassword, rows[0].PasswordHash);
-        if (!isMatch) return res.status(400).json({ message: 'Incorrect current password' });
-
-        const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash(newPassword, salt);
-        await pool.query(`UPDATE Users SET PasswordHash = ? WHERE ID = ?`, [hash, req.user.id]);
-
-        res.json({ message: 'Password changed successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
     }
 });
 
