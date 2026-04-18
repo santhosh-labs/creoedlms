@@ -3,29 +3,15 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
 const { pool } = require('../config/db');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
-// ── Multer storage for chat images ──────────────────────
-const uploadDir = path.join(__dirname, '..', 'uploads', 'chat');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `chat_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
-    }
-});
-
+// ── Multer: memory storage (no disk writes) ──────────────────
 const upload = multer({
-    storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB raw limit
     fileFilter: (req, file, cb) => {
-        const allowed = /jpeg|jpg|png|gif|webp|svg/;
-        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-        const mime = allowed.test(file.mimetype);
-        if (ext && mime) cb(null, true);
+        const allowed = /jpeg|jpg|png|gif|webp/;
+        const ok = allowed.test(file.mimetype.replace('image/', ''));
+        if (ok) cb(null, true);
         else cb(new Error('Only image files are allowed'));
     }
 });
@@ -45,7 +31,6 @@ router.get('/contacts', verifyToken, async (req, res) => {
                 SELECT ReceiverID FROM Messages WHERE SenderID = ?
             )
         `, [req.user.id, req.user.id]);
-        
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -59,7 +44,7 @@ router.get('/contacts', verifyToken, async (req, res) => {
 router.get('/thread/:userId', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT m.*, u.Name as SenderName 
+            SELECT m.ID, m.SenderID, m.ReceiverID, m.Message, m.ImageUrl, m.IsRead, m.SentAt, u.Name as SenderName
             FROM Messages m
             JOIN Users u ON m.SenderID = u.ID
             WHERE (m.SenderID = ? AND m.ReceiverID = ?)
@@ -68,8 +53,10 @@ router.get('/thread/:userId', verifyToken, async (req, res) => {
         `, [req.user.id, req.params.userId, req.params.userId, req.user.id]);
 
         // Mark as read
-        await pool.query(`UPDATE Messages SET IsRead = TRUE WHERE SenderID = ? AND ReceiverID = ?`, 
-            [req.params.userId, req.user.id]);
+        await pool.query(
+            `UPDATE Messages SET IsRead = TRUE WHERE SenderID = ? AND ReceiverID = ?`,
+            [req.params.userId, req.user.id]
+        );
 
         res.json(rows);
     } catch (err) {
@@ -98,22 +85,26 @@ router.post('/:receiverId', verifyToken, async (req, res) => {
 });
 
 // @route   POST api/messages/:receiverId/image
-// @desc    Send an image in chat
+// @desc    Send an image — stored as base64 data URI in TiDB (no disk)
 // @access  Private
 router.post('/:receiverId/image', verifyToken, upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No image uploaded' });
 
-    const imageUrl = `/uploads/chat/${req.file.filename}`;
+    // Convert buffer → base64 data URI
+    const mime = req.file.mimetype;
+    const b64  = req.file.buffer.toString('base64');
+    const dataUri = `data:${mime};base64,${b64}`;
+
     const caption = req.body.caption || '';
 
     try {
         const [result] = await pool.query(
             `INSERT INTO Messages (SenderID, ReceiverID, Message, ImageUrl) VALUES (?, ?, ?, ?)`,
-            [req.user.id, req.params.receiverId, caption, imageUrl]
+            [req.user.id, req.params.receiverId, caption, dataUri]
         );
-        res.json({ success: true, id: result.insertId, imageUrl });
+        res.json({ success: true, id: result.insertId, imageUrl: dataUri });
     } catch (err) {
-        console.error(err);
+        console.error('Image insert error:', err);
         res.status(500).send('Server Error');
     }
 });

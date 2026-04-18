@@ -45,8 +45,8 @@ export default function Messages({ user }) {
         if (!file) return;
         e.target.value = '';
 
-        // ── Client-side compression using Canvas ──────────────
-        const compressImage = (file, maxWidth = 1200, quality = 0.75) =>
+        // ── Light client-side compression (1600px max, 0.88 quality) ──
+        const compressImage = (file, maxWidth = 1600, quality = 0.88) =>
             new Promise((resolve) => {
                 const img = new Image();
                 const reader = new FileReader();
@@ -73,8 +73,7 @@ export default function Messages({ user }) {
 
         const compressed = await compressImage(file);
         const url = URL.createObjectURL(compressed);
-        const saving = ((file.size - compressed.size) / file.size * 100).toFixed(0);
-        console.log(`🗜️ Compressed: ${(file.size/1024).toFixed(0)}KB → ${(compressed.size/1024).toFixed(0)}KB (${saving}% saved)`);
+        console.log(`Compressed: ${(file.size/1024).toFixed(0)}KB → ${(compressed.size/1024).toFixed(0)}KB`);
         setImagePreview({ file: compressed, url, originalName: file.name });
     };
 
@@ -138,7 +137,10 @@ export default function Messages({ user }) {
 
     const getImageSrc = (msg) => {
         if (!msg.ImageUrl) return null;
-        if (msg.optimistic) return msg.ImageUrl; // blob URL
+        if (msg.optimistic) return msg.ImageUrl; // blob URL for optimistic
+        // Base64 data URI stored in DB
+        if (msg.ImageUrl.startsWith('data:')) return msg.ImageUrl;
+        // Legacy: disk-based path
         return `${API_BASE}${msg.ImageUrl}`;
     };
 
