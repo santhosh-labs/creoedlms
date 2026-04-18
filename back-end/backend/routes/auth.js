@@ -53,6 +53,85 @@ router.post('/login', async (req, res) => {
             return res.status(403).json({ message: 'Please verify your email address to activate your account. Check your inbox.' });
         }
 
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 10 * 60000); // 10 minutes from now
+
+        await pool.query(
+            'UPDATE Users SET TwoFactorCode = ?, TwoFactorExpiry = ? WHERE ID = ?',
+            [otpCode, otpExpiry, user.ID]
+        );
+
+        if (resend) {
+            try {
+                await resend.emails.send({
+                    from: 'Creoed <no-reply@creoed.com>',
+                    to: user.Email,
+                    subject: 'Your Creoed Login Verification Code',
+                    html: `<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e1e8ed;border-radius:8px;">
+                        <h2 style="color:#7c3aed;text-align:center;">Login Verification</h2>
+                        <p>Hi ${user.Name},</p>
+                        <p>Please use the following 6-digit code to complete your login. This code is valid for 10 minutes.</p>
+                        <div style="text-align:center;margin:30px 0;font-size:32px;font-weight:bold;letter-spacing:4px;color:#1e293b;">
+                            ${otpCode}
+                        </div>
+                        <p>If you did not request this code, please ignore this email.</p>
+                        <p>Thanks,<br><strong>The Creoed Team</strong></p>
+                    </div>`
+                });
+                console.log('✅ OTP sent via Resend to:', user.Email);
+            } catch (mailErr) {
+                console.error('❌ Resend OTP error:', mailErr.message);
+            }
+        } else {
+            console.log('🔗 OTP (copy this as fallback):', otpCode);
+        }
+
+        return res.json({
+            requiresTwoFactor: true,
+            email: user.Email,
+            message: 'A 6-digit verification code has been sent to your email.'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/auth/verify-otp
+// @desc    Verify OTP and get token
+// @access  Public
+router.post('/verify-otp', async (req, res) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    try {
+        const [rows] = await pool.query(`
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.RoleID, u.IsActive, u.IsLocked, r.RoleName, u.TwoFactorCode, u.TwoFactorExpiry
+            FROM Users u
+            JOIN Roles r ON u.RoleID = r.ID
+            WHERE u.Email = ?
+        `, [email]);
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Invalid request' });
+        }
+
+        const user = rows[0];
+
+        if (!user.TwoFactorCode || user.TwoFactorCode !== otp) {
+            return res.status(400).json({ message: 'Invalid or incorrect verification code' });
+        }
+
+        if (new Date() > new Date(user.TwoFactorExpiry)) {
+            return res.status(400).json({ message: 'Verification code has expired. Please login again.' });
+        }
+
+        // Clear the OTP
+        await pool.query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE ID = ?', [user.ID]);
+
         const payload = {
             id: user.ID,
             email: user.Email,

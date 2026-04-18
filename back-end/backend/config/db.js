@@ -18,6 +18,15 @@ const connectDB = async () => {
     try {
         const connection = await pool.getConnection();
         await connection.query("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+        
+        // Auto-migrate tables for 2FA
+        try {
+            await connection.query('ALTER TABLE Users ADD COLUMN TwoFactorCode VARCHAR(10) NULL, ADD COLUMN TwoFactorExpiry DATETIME NULL');
+            console.log('Migrated DB for 2FA capabilities');
+        } catch (e) {
+            // Probably already exists
+        }
+        
         console.log('TiDB Cloud Database connected successfully');
         connection.release();
     } catch (err) {
