@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Briefcase, BookOpen, Users, AlertCircle, X, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Activity, Briefcase, BookOpen, Users, AlertCircle, X, Eye, EyeOff, Trash2, Edit } from 'lucide-react';
 import api from '../api';
 
 const ROLES = [
@@ -16,8 +16,10 @@ export default function SuperAdminDashboard({ user }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
-    // Create Staff modal
+    // Create/Edit Staff modal
     const [showStaffModal, setShowStaffModal] = useState(false);
+    const [isEditingStaff, setIsEditingStaff] = useState(false);
+    const [editingStaffId, setEditingStaffId] = useState(null);
     const [staffForm, setStaffForm] = useState(emptyStaffForm);
     const [staffLoading, setStaffLoading] = useState(false);
     const [showPass, setShowPass] = useState(false);
@@ -44,30 +46,61 @@ export default function SuperAdminDashboard({ user }) {
 
     useEffect(() => { fetchData(); }, []);
 
-    const handleCreateStaff = async (e) => {
+    const handleSaveStaff = async (e) => {
         e.preventDefault();
-        if (!staffForm.name || !staffForm.email || !staffForm.password || !staffForm.roleId) {
-            return alert('Name, Email, Password and Role are required.');
+        if (!staffForm.name || !staffForm.email || (!isEditingStaff && !staffForm.password) || !staffForm.roleId) {
+            return alert('Name, Email, Role, and Password (for new staff) are required.');
         }
         setStaffLoading(true);
         try {
-            const res = await api.post('/users/staff', staffForm);
+            let res;
+            if (isEditingStaff) {
+                res = await api.put(`/users/staff/${editingStaffId}`, staffForm);
+            } else {
+                res = await api.post('/users/staff', staffForm);
+            }
+            
             const code = res.data.staffCode || '';
             setStaffForm(emptyStaffForm);
             setShowStaffModal(false);
+            setIsEditingStaff(false);
+            setEditingStaffId(null);
             setShowPass(false);
             fetchData();
 
             const banner = document.createElement('div');
-            banner.textContent = `✓ Staff created${code ? ' · ID: ' + code : ''}`;
+            banner.textContent = isEditingStaff ? '✓ Staff updated' : `✓ Staff created${code ? ' · ID: ' + code : ''}`;
             Object.assign(banner.style, { position: 'fixed', top: '20px', right: '20px', background: 'var(--success)', color: '#fff', padding: '12px 20px', borderRadius: '8px', zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' });
             document.body.appendChild(banner);
             setTimeout(() => banner.remove(), 3000);
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to create staff.');
+            alert(err.response?.data?.message || `Failed to ${isEditingStaff ? 'update' : 'create'} staff.`);
         } finally {
             setStaffLoading(false);
         }
+    };
+
+    const openCreateStaffModal = () => {
+        setIsEditingStaff(false);
+        setEditingStaffId(null);
+        setStaffForm(emptyStaffForm);
+        setShowStaffModal(true);
+    };
+
+    const handleEditStaff = (tut) => {
+        setIsEditingStaff(true);
+        setEditingStaffId(tut.ID);
+        setStaffForm({
+            name: tut.Name || '',
+            email: tut.Email || '',
+            phone: tut.Phone || '',
+            password: '', // blank password, not required for edit unless they want to change it
+            roleId: tut.RoleID || '',
+            gender: tut.Gender || '',
+            city: tut.City || '',
+            country: tut.Country || ''
+        });
+        setShowStaffModal(true);
     };
 
     const handleDeleteStaff = async (id, name) => {
@@ -96,12 +129,12 @@ export default function SuperAdminDashboard({ user }) {
         return (
             <div className="content-wrapper">
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
-                    <button onClick={() => { setShowStaffModal(false); setStaffForm(emptyStaffForm); setShowPass(false); }} className="btn btn-secondary">← Back</button>
-                    <h2 className="page-title" style={{ margin: 0 }}>Create Staff Member</h2>
+                    <button onClick={() => { setShowStaffModal(false); setStaffForm(emptyStaffForm); setShowPass(false); setIsEditingStaff(false); }} className="btn btn-secondary">← Back</button>
+                    <h2 className="page-title" style={{ margin: 0 }}>{isEditingStaff ? 'Edit Staff Member' : 'Create Staff Member'}</h2>
                 </div>
 
                 <div className="section-card" style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
-                    <form onSubmit={handleCreateStaff}>
+                    <form onSubmit={handleSaveStaff}>
                         <div className="grid-2" style={{ gap: '20px' }}>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={labelStyle}>Role * <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--text-muted)' }}>(determines system access)</span></label>
@@ -127,16 +160,16 @@ export default function SuperAdminDashboard({ user }) {
                             </div>
 
                             <div>
-                                <label style={labelStyle}>Password *</label>
+                                <label style={labelStyle}>{isEditingStaff ? 'New Password' : 'Password *'}</label>
                                 <div style={{ position: 'relative' }}>
                                     <input
                                         className="form-input"
                                         style={{ paddingRight: '40px' }}
                                         type={showPass ? 'text' : 'password'}
-                                        placeholder="Set a secure password"
+                                        placeholder={isEditingStaff ? "Leave blank to keep current" : "Set a secure password"}
                                         value={staffForm.password}
                                         onChange={e => setStaffForm({ ...staffForm, password: e.target.value })}
-                                        required
+                                        required={!isEditingStaff}
                                     />
                                     <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>
                                         {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -166,9 +199,9 @@ export default function SuperAdminDashboard({ user }) {
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
-                            <button type="button" className="btn btn-secondary" onClick={() => { setShowStaffModal(false); setStaffForm(emptyStaffForm); }}>Cancel</button>
+                            <button type="button" className="btn btn-secondary" onClick={() => { setShowStaffModal(false); setStaffForm(emptyStaffForm); setIsEditingStaff(false); }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={staffLoading}>
-                                {staffLoading ? 'Creating...' : 'Create Staff Member'}
+                                {staffLoading ? (isEditingStaff ? 'Saving...' : 'Creating...') : (isEditingStaff ? 'Save Changes' : 'Create Staff Member')}
                             </button>
                         </div>
                     </form>
@@ -208,7 +241,7 @@ export default function SuperAdminDashboard({ user }) {
                 <div className="section-card">
                     <div className="section-header">
                         <h2 className="section-title">Staff Directory</h2>
-                        <button className="btn btn-primary" onClick={() => setShowStaffModal(true)}>+ Create Staff</button>
+                        <button className="btn btn-primary" onClick={openCreateStaffModal}>+ Create Staff</button>
                     </div>
                     <div className="table-container">
                         <table className="data-table">
@@ -237,7 +270,16 @@ export default function SuperAdminDashboard({ user }) {
                                                     {tut.RoleName}
                                                 </span>
                                             </td>
-                                            <td style={{ textAlign: 'right' }}>
+                                            <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                <button 
+                                                    onClick={() => handleEditStaff(tut)}
+                                                    style={{ color: 'var(--text-main)', padding: '6px', borderRadius: '4px', transition: 'background 0.2s' }}
+                                                    onMouseOver={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                                                    onMouseOut={e => e.currentTarget.style.background = 'transparent'}
+                                                    title="Edit Staff"
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
                                                 <button 
                                                     onClick={() => handleDeleteStaff(tut.ID, tut.Name)}
                                                     style={{ color: 'var(--danger)', padding: '6px', borderRadius: '4px', transition: 'background 0.2s' }}

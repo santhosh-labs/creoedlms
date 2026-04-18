@@ -248,7 +248,7 @@ router.get('/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tut
 router.get('/tutors', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT u.ID, u.StudentCode, u.Name, u.Email, r.RoleName
+            SELECT u.ID, u.StudentCode, u.Name, u.Email, u.Phone, u.Gender, u.City, u.Country, u.RoleID, r.RoleName
             FROM Users u
             JOIN Roles r ON u.RoleID = r.ID
             WHERE r.RoleName IN ('Tutor', 'Admin')
@@ -397,6 +397,48 @@ router.delete('/staff/:id', verifyToken, authorizeRoles('Super Admin'), async (r
         res.json({ message: 'Staff member deleted successfully' });
     } catch (err) {
         await connection.rollback();
+        console.error(err);
+        res.status(500).send('Server Error');
+    } finally {
+        connection.release();
+    }
+});
+
+// @route   PUT api/users/staff/:id
+// @desc    Update a staff member
+// @access  Private (Super Admin only)
+router.put('/staff/:id', verifyToken, authorizeRoles('Super Admin'), async (req, res) => {
+    const staffId = req.params.id;
+    const { name, email, phone, password, roleId, gender, city, country } = req.body;
+
+    if (!name || !email || !roleId) {
+        return res.status(400).json({ message: 'Name, Email and Role are required' });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        const [existing] = await connection.query('SELECT ID FROM Users WHERE Email = ? AND ID != ?', [email, staffId]);
+        if (existing.length > 0) return res.status(400).json({ message: 'A user with this email already exists' });
+
+        const [[role]] = await connection.query('SELECT RoleName FROM Roles WHERE ID = ?', [roleId]);
+        if (!role) return res.status(400).json({ message: 'Invalid Role ID' });
+
+        let query = 'UPDATE Users SET Name = ?, Email = ?, Phone = ?, RoleID = ?, Gender = ?, City = ?, Country = ?';
+        let params = [name, email, phone || null, roleId, gender || null, city || null, country || null];
+
+        if (password && password.trim() !== '') {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+            query += ', PasswordHash = ?';
+            params.push(hashedPassword);
+        }
+
+        query += ' WHERE ID = ?';
+        params.push(staffId);
+
+        await connection.query(query, params);
+        res.json({ message: 'Staff member updated successfully' });
+    } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
     } finally {
