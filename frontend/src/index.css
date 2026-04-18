@@ -184,6 +184,16 @@ button {
 .sidebar.collapsed .logo-container {
   justify-content: center;
   padding: 0;
+  overflow: hidden;
+}
+
+/* Clamp logo to fit collapsed width */
+.sidebar.collapsed .logo-dark,
+.sidebar.collapsed .logo-light {
+  max-width: 40px !important;
+  height: 28px !important;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .sidebar.collapsed .nav-item {
@@ -198,6 +208,8 @@ button {
   gap: 10px;
   margin-bottom: 28px;
   padding: 4px 10px;
+  overflow: hidden;       /* prevent logo bleeding out of sidebar */
+  min-width: 0;
 }
 
 .logo-icon {

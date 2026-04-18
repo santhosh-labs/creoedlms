@@ -62,19 +62,30 @@ export default function Sidebar({ role, mobileOpen, onCloseMobile }) {
 
     return (
         <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
-            <div className="logo-container">
-                <img
-                    className="logo-dark"
-                    src="/CREO.ED (7).png"
-                    alt="Creoed"
-                    style={{ height: collapsed ? '32px' : '38px', width: 'auto', objectFit: 'contain', transition: 'height 0.2s', display: 'block' }}
-                />
-                <img
-                    className="logo-light"
-                    src="/CREOED (2).png"
-                    alt="Creoed"
-                    style={{ height: collapsed ? '32px' : '38px', width: 'auto', objectFit: 'contain', transition: 'height 0.2s', display: 'block' }}
-                />
+        <div className="logo-container">
+                {collapsed ? (
+                    /* Compact icon fits perfectly in 68px collapsed sidebar */
+                    <img
+                        src="/CREO.ED (7).png"
+                        alt="Creoed"
+                        style={{ height: '32px', width: '32px', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+                    />
+                ) : (
+                    <>
+                        <img
+                            className="logo-dark"
+                            src="/CREO.ED (7).png"
+                            alt="Creoed"
+                            style={{ height: '38px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                        />
+                        <img
+                            className="logo-light"
+                            src="/CREOED (2).png"
+                            alt="Creoed"
+                            style={{ height: '38px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                        />
+                    </>
+                )}
                 {/* Mobile close button */}
                 <button className="sidebar-mobile-close" onClick={onCloseMobile} title="Close Menu">
                     <X size={20} />
