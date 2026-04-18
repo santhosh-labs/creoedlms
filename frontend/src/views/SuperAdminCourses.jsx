@@ -29,12 +29,12 @@ export default function SuperAdminCourses() {
 
     // Add Course modal
     const [showAddCourse, setShowAddCourse] = useState(false);
-    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
+    const [courseForm, setCourseForm] = useState({ courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true, showLessons: true });
     const [courseLoading, setCourseLoading] = useState(false);
 
     // Edit Course
     const [showEditCourse, setShowEditCourse] = useState(false);
-    const [editForm, setEditForm] = useState({ id: '', courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
+    const [editForm, setEditForm] = useState({ id: '', courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true, showLessons: true });
     const [editLoading, setEditLoading] = useState(false);
 
     // Add Batch modal
@@ -90,9 +90,10 @@ export default function SuperAdminCourses() {
                 category: courseForm.category,
                 duration: courseForm.duration,
                 startingDate: courseForm.startingDate,
-                visibility: courseForm.visibility ? 1 : 0
+                visibility: courseForm.visibility ? 1 : 0,
+                showLessons: courseForm.showLessons ? 1 : 0
             });
-            setCourseForm({ courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true });
+            setCourseForm({ courseCode: '', name: '', description: '', overview: '', totalFee: '', image: '', coverImage: '', targetAudience: '', skillLevel: '', language: '', courseOutcome: '', category: '', duration: '', startingDate: '', visibility: true, showLessons: true });
             setShowAddCourse(false);
             fetchData();
         } catch (err) {
@@ -122,7 +123,8 @@ export default function SuperAdminCourses() {
                 category: editForm.category,
                 duration: editForm.duration,
                 startingDate: editForm.startingDate,
-                visibility: editForm.visibility ? 1 : 0
+                visibility: editForm.visibility ? 1 : 0,
+                showLessons: editForm.showLessons ? 1 : 0
             });
             setShowEditCourse(false);
             fetchData();
@@ -219,9 +221,15 @@ export default function SuperAdminCourses() {
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome <span style={{ fontWeight: 400, fontSize: '11px' }}>Ã¢â‚¬â€ one point per line</span></label><textarea className="form-input" placeholder={"Build real-world projects\nGet job-ready skills\nEarn industry certificate"} value={courseForm.courseOutcome} onChange={e => setCourseForm({ ...courseForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome <span style={{ fontWeight: 400, fontSize: '11px' }}>— one point per line</span></label><textarea className="form-input" placeholder={"Build real-world projects\nGet job-ready skills\nEarn industry certificate"} value={courseForm.courseOutcome} onChange={e => setCourseForm({ ...courseForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Duration</label><input className="form-input" placeholder="e.g. 60 Hrs" value={courseForm.duration} onChange={e => setCourseForm({ ...courseForm, duration: e.target.value })} /></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Batch Starting Date</label><input className="form-input" type="date" value={courseForm.startingDate} onChange={e => setCourseForm({ ...courseForm, startingDate: e.target.value })} /></div></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input type="checkbox" id="courseVis" checked={courseForm.visibility} onChange={e => setCourseForm({ ...courseForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                            <label htmlFor="courseVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input type="checkbox" id="courseVis" checked={courseForm.visibility} onChange={e => setCourseForm({ ...courseForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                <label htmlFor="courseVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input type="checkbox" id="courseShowLessons" checked={courseForm.showLessons} onChange={e => setCourseForm({ ...courseForm, showLessons: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                <label htmlFor="courseShowLessons" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show Lessons on Website</label>
+                            </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={courseForm.category} onChange={e => setCourseForm({ ...courseForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (₹) *</label><input className="form-input" type="number" min="0" placeholder="e.g. 25000" value={courseForm.totalFee} onChange={e => setCourseForm({ ...courseForm, totalFee: e.target.value })} required /></div></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>— card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 800, 0.9); setCourseForm(prev => ({ ...prev, image: compressed })); } }} />{courseForm.image && (<div style={{ marginTop: '10px' }}><img src={courseForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; Compressed</span></div>)}</div>
@@ -250,9 +258,15 @@ export default function SuperAdminCourses() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Skill Level</label><select className="form-input" value={editForm.skillLevel} onChange={e => setEditForm({ ...editForm, skillLevel: e.target.value })}><option value="">Select level</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option><option>All Levels</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Language</label><select className="form-input" value={editForm.language} onChange={e => setEditForm({ ...editForm, language: e.target.value })}><option value="">Select language</option><option>English</option><option>Tamil</option><option>Hindi</option><option>Telugu</option><option>Malayalam</option></select></div></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>Course Outcome</label><textarea className="form-input" value={editForm.courseOutcome} onChange={e => setEditForm({ ...editForm, courseOutcome: e.target.value })} rows={3} style={{ resize: 'vertical' }} /></div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Duration</label><input className="form-input" placeholder="e.g. 60 Hrs" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} /></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Batch Starting Date</label><input className="form-input" type="date" value={editForm.startingDate} onChange={e => setEditForm({ ...editForm, startingDate: e.target.value })} /></div></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input type="checkbox" id="editVis" checked={editForm.visibility} onChange={e => setEditForm({ ...editForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                            <label htmlFor="editVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input type="checkbox" id="editVis" checked={editForm.visibility} onChange={e => setEditForm({ ...editForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                <label htmlFor="editVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input type="checkbox" id="editShowLessons" checked={editForm.showLessons} onChange={e => setEditForm({ ...editForm, showLessons: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                <label htmlFor="editShowLessons" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show Lessons on Website</label>
+                            </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Category</label><select className="form-input" value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}><option value="">Select category</option><option>Technology</option><option>Design</option><option>Business</option><option>Health</option><option>Finance</option><option>Marketing</option></select></div><div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Total Course Fee (₹) *</label><input className="form-input" type="number" min="0" value={editForm.totalFee} onChange={e => setEditForm({ ...editForm, totalFee: e.target.value })} required /></div></div>
                         <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>Course Thumbnail <span style={{ fontWeight: 400, fontSize: '11px' }}>— card image</span></label><input className="form-input" type="file" accept="image/*" onChange={async e => { const file = e.target.files[0]; if (file) { const compressed = await compressImage(file, 1200, 800, 0.9); setEditForm(prev => ({ ...prev, image: compressed })); } }} />{editForm.image && (<div style={{ marginTop: '10px' }}><img src={editForm.image} alt="Preview" style={{ width: '120px', height: '70px', objectFit: 'cover', borderRadius: '4px' }} /><span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>&#10003; High Quality</span></div>)}{!editForm.image && (<div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Leave empty to keep existing image.</div>)}</div>
