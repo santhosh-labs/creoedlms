@@ -40,7 +40,30 @@ const toast = (msg, color = 'var(--primary)') => {
 const card  = { background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '28px', marginBottom: '20px' };
 const sh    = { fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '9px' };
 const lbl   = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' };
+const lbl   = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' };
 const ro    = { padding: '10px 14px', background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', fontSize: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' };
+
+const Toggle = ({ val, set }) => (
+    <button onClick={() => set(!val)}
+        style={{ width: '48px', height: '27px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+            background: val ? 'var(--primary)' : 'var(--border)', position: 'relative', transition: 'background .2s', flexShrink: 0 }}>
+        <div style={{ width: '21px', height: '21px', borderRadius: '50%', background: '#fff',
+            position: 'absolute', top: '3px', left: val ? '24px' : '3px',
+            transition: 'left .2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+    </button>
+);
+
+const PwdInput = ({ placeholder, value, onChange, show, setShow }) => (
+    <div style={{ position: 'relative' }}>
+        <input type={show ? 'text' : 'password'} required className="form-input"
+            placeholder={placeholder} value={value} onChange={onChange}
+            style={{ paddingRight: '42px' }} />
+        <button type="button" onClick={() => setShow(!show)}
+            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+    </div>
+);
 
 export default function SettingsPage({ user }) {
     const navigate = useNavigate();
@@ -101,8 +124,9 @@ export default function SettingsPage({ user }) {
             await fetchProfile();
             setIsEditing(false);
             toast('✓ Profile updated successfully');
-        } catch {
-            toast('✗ Failed to update profile', '#e53e3e');
+        } catch (err) {
+            console.error('Profile update error:', err);
+            toast(err.response?.data?.message || '✗ Failed to update profile', '#e53e3e');
         } finally {
             setSaving(false);
         }
@@ -172,27 +196,7 @@ export default function SettingsPage({ user }) {
     // ── Helpers ────────────────────────────────────────────────
     const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-    const Toggle = ({ val, set }) => (
-        <button onClick={() => set(!val)}
-            style={{ width: '48px', height: '27px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-                background: val ? 'var(--primary)' : 'var(--border)', position: 'relative', transition: 'background .2s', flexShrink: 0 }}>
-            <div style={{ width: '21px', height: '21px', borderRadius: '50%', background: '#fff',
-                position: 'absolute', top: '3px', left: val ? '24px' : '3px',
-                transition: 'left .2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
-        </button>
-    );
-
-    const PwdInput = ({ placeholder, value, onChange, show, setShow }) => (
-        <div style={{ position: 'relative' }}>
-            <input type={show ? 'text' : 'password'} required className="form-input"
-                placeholder={placeholder} value={value} onChange={onChange}
-                style={{ paddingRight: '42px' }} />
-            <button type="button" onClick={() => setShow(!show)}
-                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                {show ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-        </div>
-    );
+    const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
     // ── Tab definitions ────────────────────────────────────────
     const TABS = [
