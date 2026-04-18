@@ -10,6 +10,7 @@ import api from '../api';
 /* ── Reusable 3-dot Action Dropdown ────────────────────────────── */
 function ActionMenu({ items }) {
   const [open, setOpen] = useState(false);
+  const [menuStyles, setMenuStyles] = useState({});
   const ref = useRef(null);
 
   useEffect(() => {
@@ -18,17 +19,35 @@ function ActionMenu({ items }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!open) {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        // If there's less than 200px space below, open upwards
+        if (window.innerHeight - rect.bottom < 200) {
+          setMenuStyles({ bottom: '100%', top: 'auto', right: 0, marginBottom: '6px' });
+        } else {
+          setMenuStyles({ top: '100%', bottom: 'auto', right: 0, marginTop: '6px' });
+        }
+      }
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  };
+
   return (
-    <div className="action-dropdown-wrapper" ref={ref}>
+    <div className="action-dropdown-wrapper" ref={ref} style={{ position: 'relative' }}>
       <button
         className="action-kebab-btn"
-        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+        onClick={handleToggle}
         title="Actions"
       >
         <MoreVertical size={16} />
       </button>
       {open && (
-        <div className="action-dropdown-menu">
+        <div className="action-dropdown-menu" style={{ ...menuStyles, position: 'absolute', zIndex: 999 }}>
           {items.map((item, i) =>
             item === 'divider' ? (
               <div key={i} className="action-dropdown-divider" />

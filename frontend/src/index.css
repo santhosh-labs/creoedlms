@@ -591,6 +591,8 @@ button {
 .table-container {
   width: 100%;
   overflow-x: auto;
+  min-height: 250px;
+  padding-bottom: 15px;
 }
 
 .data-table {
