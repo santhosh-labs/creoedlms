@@ -85,12 +85,12 @@ export default function StudentDashboard({ user }) {
                     { title: 'Avg Assignment Grade', value: loading ? '—' : (analytics.avgGrade !== null ? `${analytics.avgGrade}/100` : 'N/A'), icon: <CheckCircle size={20}/>, bg: 'rgba(108,60,204,0.08)', color: '#6c3ccc' },
                     { title: 'Avg Quiz Score',       value: loading ? '—' : (analytics.avgQuiz !== null ? `${analytics.avgQuiz}%` : 'N/A'), icon: <CheckCircle size={20}/>, bg: 'rgba(224,40,140,0.08)', color: '#e0288c' }
                 ].map((s, i) => (
-                    <div key={i} style={{ padding: '20px 24px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
+                    <div key={i} className="kpi-card" style={{ padding: '20px 24px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'var(--shadow-sm)' }}>
                         <div>
                             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight:600 }}>{s.title}</div>
                             <div style={{ fontSize: '28px', fontWeight: 800, color: s.color, lineHeight:1 }}>{s.value}</div>
                         </div>
-                        <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>
+                        <div className="kpi-icon" style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}>
                             {s.icon}
                         </div>
                     </div>

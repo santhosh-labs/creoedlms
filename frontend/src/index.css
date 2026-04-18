@@ -1164,10 +1164,30 @@ button {
     padding: 16px !important;
   }
 
-  /* KPI grid: 2 columns still, but with proper available width */
+  /* KPI grid: 2 columns, tight gap */
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+    gap: 10px !important;
+  }
+
+  /* Card: stack icon on top, text below — no side-by-side on narrow cards */
+  .kpi-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 14px !important;
+    gap: 10px;
+  }
+
+  /* Icon: smaller and placed first (top) */
+  .kpi-icon {
+    width: 36px !important;
+    height: 36px !important;
+    order: -1;        /* show icon above text */
+    border-radius: 8px !important;
+  }
+  .kpi-icon svg {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   /* Dashboard two-col: stack vertically on mobile */
