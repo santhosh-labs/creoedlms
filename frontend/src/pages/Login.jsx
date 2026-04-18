@@ -114,7 +114,7 @@ export default function Login() {
                                 <label style={labelStyle}>Email or Student ID</label>
                                 <div style={{ position: 'relative' }}>
                                     <Mail size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
-                                    <input type="text" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
+                                    <input type="text" value={email} onChange={e => setEmail(e.target.value)} required className="login-autofill-fix" style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
                                 </div>
                             </div>
 
@@ -122,7 +122,7 @@ export default function Login() {
                                 <label style={labelStyle}>Password</label>
                                 <div style={{ position: 'relative' }}>
                                     <Lock size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
-                                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required style={{...inputStyle, paddingRight: '2.8rem'}} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
+                                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required className="login-autofill-fix" style={{...inputStyle, paddingRight: '2.8rem'}} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
                                     <button type="button" onClick={() => setShowPass(v => !v)} tabIndex={-1}
                                         style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 0 }}>
                                         {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
