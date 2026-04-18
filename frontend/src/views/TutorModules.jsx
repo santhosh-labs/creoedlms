@@ -3,7 +3,7 @@ import { BookOpen, Plus, ChevronDown, ChevronRight, AlertCircle, Trash2, X, Link
 import api from '../api';
 
 const emptyModule = { title: '', description: '' };
-const emptyLesson = { title: '', type: 'Video', contentUrl: '', sessionDate: '', sessionTime: '', meetingLink: '' };
+const emptyLesson = { title: '', type: 'Video', contentUrl: '', sessionDate: '', sessionTime: '', meetingLink: '', visibility: true };
 
 export default function TutorModules({ user }) {
     const [classes, setClasses]     = useState([]);
@@ -71,9 +71,10 @@ export default function TutorModules({ user }) {
                     sessionDate: isLive ? lesForm.sessionDate : undefined,
                     sessionTime: isLive ? lesForm.sessionTime : undefined,
                     meetingLink: isLive ? (lesForm.meetingLink || null) : undefined,
+                    visibility: lesForm.visibility ? 1 : 0,
                 });
             } else {
-                await api.post(`/modules/${lessonModal}/lessons`, { title: lesForm.title, type: lesForm.type, contentUrl });
+                await api.post(`/modules/${lessonModal}/lessons`, { title: lesForm.title, type: lesForm.type, contentUrl, visibility: lesForm.visibility ? 1 : 0 });
                 // Also create a Session for the class if it's a Live Class (only on creation for now)
                 if (isLive && lesForm.sessionDate && lesForm.sessionTime) {
                     await api.post('/sessions', {
@@ -192,6 +193,11 @@ export default function TutorModules({ user }) {
                             </div>
                         )}
 
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input type="checkbox" id="lessonVis" checked={lesForm.visibility} onChange={e => setLesForm({ ...lesForm, visibility: e.target.checked })} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                            <label htmlFor="lessonVis" style={{ fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>Show on Public Website</label>
+                        </div>
+
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '24px' }}>
                             <button type="button" className="btn btn-secondary" onClick={() => { setLessonModal(null); setEditingLessonId(null); setLesForm(emptyLesson); }}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={lesSaving}>{lesSaving ? 'Saving...' : editingLessonId ? 'Save Changes' : lesForm.type === 'Live Class' ? 'Schedule Live Class' : 'Add Lesson'}</button>
@@ -260,7 +266,7 @@ export default function TutorModules({ user }) {
                                                             </a>
                                                         )}
                                                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-                                                            <button onClick={() => { setEditingLessonId(les.ID); setLessonModal(mod.ID); setLesForm({ title: les.Title, type: les.Type, contentUrl: les.ContentUrl !== 'TBD' && les.Type !== 'Live Class' ? les.ContentUrl : '', meetingLink: les.Type === 'Live Class' && les.ContentUrl !== 'TBD' ? les.ContentUrl : '', sessionDate: les.SessionDate ? les.SessionDate.split('T')[0] : '', sessionTime: les.SessionDate ? new Date(les.SessionDate).toTimeString().slice(0,5) : '' }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', fontSize: '13px', fontWeight: 600 }}>
+                                                            <button onClick={() => { setEditingLessonId(les.ID); setLessonModal(mod.ID); setLesForm({ title: les.Title, type: les.Type, contentUrl: les.ContentUrl !== 'TBD' && les.Type !== 'Live Class' ? les.ContentUrl : '', meetingLink: les.Type === 'Live Class' && les.ContentUrl !== 'TBD' ? les.ContentUrl : '', sessionDate: les.SessionDate ? les.SessionDate.split('T')[0] : '', sessionTime: les.SessionDate ? new Date(les.SessionDate).toTimeString().slice(0,5) : '', visibility: les.Visibility !== 0 }); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '4px', fontSize: '13px', fontWeight: 600 }}>
                                                                 Edit
                                                             </button>
                                                             <button onClick={() => deleteLesson(les.ID)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px' }} title="Delete Lesson">

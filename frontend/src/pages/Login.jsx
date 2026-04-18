@@ -92,7 +92,7 @@ export default function Login() {
                 boxShadow: '0 8px 40px rgba(124,58,237,0.08)'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <img src="/CREO.ED (9).png" alt="Creoed Logo" style={{ height: '40px', marginBottom: '1.5rem' }} />
+                    <img src="/CREOED (2).png" alt="Creoed Logo" style={{ height: '40px', marginBottom: '1.5rem' }} />
                     <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f0a2e', marginBottom: '0.5rem', fontFamily: FONT, letterSpacing: '-0.02em' }}>
                         {showForgot ? 'Reset password' : 'Welcome Back'}
                     </h2>
@@ -114,7 +114,7 @@ export default function Login() {
                                 <label style={labelStyle}>Email or Student ID</label>
                                 <div style={{ position: 'relative' }}>
                                     <Mail size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
-                                    <input type="text" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="you@example.com or CR..." />
+                                    <input type="text" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
                                 </div>
                             </div>
 
@@ -122,7 +122,7 @@ export default function Login() {
                                 <label style={labelStyle}>Password</label>
                                 <div style={{ position: 'relative' }}>
                                     <Lock size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
-                                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required style={{...inputStyle, paddingRight: '2.8rem'}} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="••••••••" />
+                                    <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required style={{...inputStyle, paddingRight: '2.8rem'}} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
                                     <button type="button" onClick={() => setShowPass(v => !v)} tabIndex={-1}
                                         style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', padding: 0 }}>
                                         {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -154,7 +154,7 @@ export default function Login() {
                                 <label style={labelStyle}>Email Address</label>
                                 <div style={{ position: 'relative' }}>
                                     <Mail size={18} color="#94a3b8" style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)' }} />
-                                    <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="you@example.com" />
+                                    <input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required style={inputStyle} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} placeholder="" />
                                 </div>
                             </div>
                             
