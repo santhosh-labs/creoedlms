@@ -54,7 +54,7 @@ router.get('/:classId', verifyToken, async (req, res) => {
 
         // Get all lessons for these modules
         const [lessons] = await pool.query(`
-            SELECT l.ID, l.ModuleID, l.Title, l.Type, l.ContentUrl,
+            SELECT l.ID, l.ModuleID, l.Title, l.Type, l.ContentUrl, l.Visibility,
                    (SELECT s.SessionDate FROM Sessions s 
                     WHERE s.ClassID = m.ClassID AND s.Title = l.Title 
                     ORDER BY s.CreatedAt DESC LIMIT 1) as SessionDate
@@ -82,18 +82,18 @@ router.get('/:classId', verifyToken, async (req, res) => {
 // @desc    Add a lesson to a module
 // @access  Private (Tutor)
 router.post('/:moduleId/lessons', verifyToken, authorizeRoles('Tutor', 'Admin'), async (req, res) => {
-    const { title, type, contentUrl } = req.body;
+    const { title, type, contentUrl, visibility } = req.body;
     const moduleId = req.params.moduleId;
 
     if (!title || !type || !contentUrl) return res.status(400).json({ message: 'Required fields missing' });
 
     try {
         const [result] = await pool.query(
-            'INSERT INTO Lessons (ModuleID, Title, Type, ContentUrl) VALUES (?, ?, ?, ?)',
-            [moduleId, title, type, contentUrl]
+            'INSERT INTO Lessons (ModuleID, Title, Type, ContentUrl, Visibility) VALUES (?, ?, ?, ?, ?)',
+            [moduleId, title, type, contentUrl, visibility !== undefined ? visibility : 1]
         );
 
-        res.status(201).json({ id: result.insertId, title, type, contentUrl, moduleId });
+        res.status(201).json({ id: result.insertId, title, type, contentUrl, visibility, moduleId });
     } catch (err) {
         res.status(500).send('Server Error');
     }
@@ -119,12 +119,12 @@ router.put('/:id', verifyToken, authorizeRoles('Tutor', 'Admin', 'Super Admin'),
 // @desc    Edit a lesson
 // @access  Private (Tutor)
 router.put('/lessons/:lessonId', verifyToken, authorizeRoles('Tutor', 'Admin', 'Super Admin'), async (req, res) => {
-    const { title, type, contentUrl, classId, sessionDate, sessionTime, meetingLink } = req.body;
+    const { title, type, contentUrl, classId, sessionDate, sessionTime, meetingLink, visibility } = req.body;
     if (!title || !type || !contentUrl) return res.status(400).json({ message: 'Required fields missing' });
 
     try {
         // Update the lesson itself
-        await pool.query('UPDATE Lessons SET Title = ?, Type = ?, ContentUrl = ? WHERE ID = ?', [title, type, contentUrl, req.params.lessonId]);
+        await pool.query('UPDATE Lessons SET Title = ?, Type = ?, ContentUrl = ?, Visibility = ? WHERE ID = ?', [title, type, contentUrl, visibility !== undefined ? visibility : 1, req.params.lessonId]);
 
         // If it's a Live Class and session date/time provided, update the corresponding Session row
         if (type === 'Live Class' && classId && sessionDate) {
