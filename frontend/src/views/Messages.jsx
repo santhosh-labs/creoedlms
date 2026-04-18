@@ -48,7 +48,7 @@ export default function Messages({ user }) {
         // ── Light client-side compression (1600px max, 0.88 quality) ──
         const compressImage = (file, maxWidth = 1600, quality = 0.88) =>
             new Promise((resolve) => {
-                const img = new Image();
+                const img = new window.Image();
                 const reader = new FileReader();
                 reader.onload = ev => {
                     img.onload = () => {
