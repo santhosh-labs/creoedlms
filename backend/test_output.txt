@@ -1,2 +1,0 @@
-﻿[dotenv@17.3.1] injecting env (13) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
-Ensure your TiDB Cloud cluster is active and credentials in .env are correct.
