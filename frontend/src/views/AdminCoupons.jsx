@@ -10,6 +10,7 @@ export default function Coupons() {
     const [error, setError]           = useState(false);
     const [showForm, setShowForm]     = useState(false);
     const [creating, setCreating]     = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
     const [formData, setFormData]     = useState({
         code: '', discountPercentage: 100, usageLimit: 1, validUntil: ''
     });
@@ -21,6 +22,7 @@ export default function Coupons() {
             setLoading(true); setError(false);
             const res = await api.get('/coupons');
             setCoupons(res.data);
+            setSelectedIds([]);
         } catch (err) {
             console.error('Failed to load coupons', err);
             setError(true);
@@ -62,6 +64,23 @@ export default function Coupons() {
             fetchCoupons();
             toast('✓ Coupon deleted successfully!');
         } catch { alert('Failed to delete coupon'); }
+    };
+
+    const handleBulkAction = async (action) => {
+        if (selectedIds.length === 0) return;
+        if (action === 'delete' && !window.confirm(`Are you sure you want to delete ${selectedIds.length} coupons?`)) return;
+        
+        try {
+            await api.post('/coupons/bulk-action', { ids: selectedIds, action });
+            fetchCoupons();
+            toast(`✓ Bulk ${action} successful!`);
+            setSelectedIds([]);
+        } catch { alert(`Failed to bulk ${action}`); }
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === coupons.length) setSelectedIds([]);
+        else setSelectedIds(coupons.map(c => c.ID));
     };
 
     const toast = (msg) => {
@@ -351,10 +370,17 @@ export default function Coupons() {
 
                 {/* ── Coupons Table ── */}
                 {activeTab === 'list' && (
-                    <div className="table-container">
+                    <div className="table-container" style={{ paddingBottom: selectedIds.length ? '80px' : '0' }}>
                         <table className="data-table">
                             <thead>
                                 <tr>
+                                    <th style={{ width: 40, textAlign: 'center' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={coupons.length > 0 && selectedIds.length === coupons.length}
+                                            onChange={toggleSelectAll}
+                                        />
+                                    </th>
                                     <th>Code</th>
                                     <th>Discount</th>
                                     <th>Uses / Limit</th>
@@ -371,7 +397,17 @@ export default function Coupons() {
                                 ) : coupons.map(c => {
                                     const st = statusInfo(c);
                                     return (
-                                        <tr key={c.ID}>
+                                        <tr key={c.ID} style={{ background: selectedIds.includes(c.ID) ? 'var(--primary-light)' : undefined }}>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedIds.includes(c.ID)}
+                                                    onChange={() => {
+                                                        if (selectedIds.includes(c.ID)) setSelectedIds(selectedIds.filter(id => id !== c.ID));
+                                                        else setSelectedIds([...selectedIds, c.ID]);
+                                                    }}
+                                                />
+                                            </td>
                                             <td>
                                                 <span style={{
                                                     background: 'var(--primary-light)', color: 'var(--primary)',
@@ -451,6 +487,30 @@ export default function Coupons() {
                                 })}
                             </tbody>
                         </table>
+                    </div>
+                )}
+                
+                {/* Bulk Actions Bar */}
+                {selectedIds.length > 0 && activeTab === 'list' && (
+                    <div style={{
+                        position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+                        background: 'var(--card-bg)', border: '1px solid var(--border)',
+                        padding: '12px 24px', borderRadius: 12, display: 'flex', gap: 16,
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)', zIndex: 100, alignItems: 'center'
+                    }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: 13 }}>
+                            {selectedIds.length} selected
+                        </span>
+                        <div style={{ height: 20, width: 1, background: 'var(--border)' }}></div>
+                        <button className="btn btn-secondary" onClick={() => handleBulkAction('enable')} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}>
+                            <ToggleRight size={14} style={{ marginRight: 6 }}/> Enable
+                        </button>
+                        <button className="btn btn-secondary" onClick={() => handleBulkAction('disable')} style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}>
+                            <ToggleLeft size={14} style={{ marginRight: 6 }}/> Disable
+                        </button>
+                        <button className="btn btn-secondary" onClick={() => handleBulkAction('delete')} style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>
+                            <Trash2 size={14} style={{ marginRight: 6 }}/> Delete
+                        </button>
                     </div>
                 )}
 

@@ -206,12 +206,48 @@ router.put('/:id', verifyToken, authorizeRoles('Admin', 'Super Admin'), async (r
 // @desc    Delete a coupon
 // @access  Private (Admin, Super Admin)
 router.delete('/:id', verifyToken, authorizeRoles('Admin', 'Super Admin'), async (req, res) => {
+    const connection = await pool.getConnection();
     try {
-        await pool.query('DELETE FROM Coupons WHERE ID = ?', [req.params.id]);
+        await connection.beginTransaction();
+        await connection.query('DELETE FROM CouponUsage WHERE CouponID = ?', [req.params.id]);
+        await connection.query('DELETE FROM Coupons WHERE ID = ?', [req.params.id]);
+        await connection.commit();
         res.json({ message: 'Coupon deleted successfully' });
     } catch (err) {
+        await connection.rollback();
         console.error(err);
         res.status(500).send('Server Error');
+    } finally {
+        connection.release();
+    }
+});
+
+// @route   POST api/coupons/bulk-action
+// @desc    Perform bulk actions on coupons
+// @access  Private (Admin, Super Admin)
+router.post('/bulk-action', verifyToken, authorizeRoles('Admin', 'Super Admin'), async (req, res) => {
+    const { ids, action } = req.body;
+    if (!ids || !ids.length || !action) return res.status(400).json({ message: 'Missing parameters' });
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        if (action === 'delete') {
+            await connection.query('DELETE FROM CouponUsage WHERE CouponID IN (?)', [ids]);
+            await connection.query('DELETE FROM Coupons WHERE ID IN (?)', [ids]);
+        } else if (action === 'enable') {
+            await connection.query('UPDATE Coupons SET IsActive = 1 WHERE ID IN (?)', [ids]);
+        } else if (action === 'disable') {
+            await connection.query('UPDATE Coupons SET IsActive = 0 WHERE ID IN (?)', [ids]);
+        }
+        await connection.commit();
+        res.json({ message: `Bulk ${action} successful` });
+    } catch (err) {
+        await connection.rollback();
+        console.error(err);
+        res.status(500).send('Server Error');
+    } finally {
+        connection.release();
     }
 });
 

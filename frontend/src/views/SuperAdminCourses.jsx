@@ -402,7 +402,7 @@ export default function SuperAdminCourses() {
                 </div>
             )}
 
-            <div className="grid-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
                 {/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Courses Panel ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */}
                 <div className="section-card">
                     <div className="section-header">
@@ -534,66 +534,12 @@ export default function SuperAdminCourses() {
                                                 </span>
                                             </td>
                                             <td>
-                                                <button 
-                                                    onClick={() => {
-                                                        setEditForm({
-                                                            id: c.ID,
-                                                            courseCode: c.CourseCode || '',
-                                                            name: c.Name || '',
-                                                            overview: c.Overview || '',
-                                                            totalFee: c.TotalFee || '',
-                                                            image: c.Image || '',
-                                                            coverImage: c.CoverImage || '',
-                                                            targetAudience: c.TargetAudience || '',
-                                                            skillLevel: c.SkillLevel || '',
-                                                            language: c.Language || '',
-                                                            courseOutcome: c.CourseOutcome || '',
-                                                            category: c.Category || '',
-                                                            duration: c.Duration || '',
-                                                            startingDate: c.StartingDate ? c.StartingDate.split('T')[0] : '',
-                                                            visibility: c.Visibility !== 0,
-                                                            showLessons: c.ShowLessons !== 0
-                                                        });
-                                                        setShowEditCourse(true);
-                                                    }}
-                                                    style={{ color: 'var(--primary)', padding: '6px', borderRadius: '4px', background: 'transparent', border: 'none', cursor: 'pointer', marginRight: '8px' }}
-                                                    title="Edit Course"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
                                                 <button
                                                     className="btn btn-secondary"
                                                     style={{ padding: '4px 12px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px', marginRight: '8px' }}
                                                     onClick={() => { setChangeTutorClass(c); setNewTutorId(''); }}
                                                 >
                                                     <RefreshCw size={12} /> Change Tutor
-                                                </button>
-                                                <button 
-                                                    onClick={() => {
-                                                        setEditForm({
-                                                            id: c.ID,
-                                                            courseCode: c.CourseCode || '',
-                                                            name: c.Name || '',
-                                                            overview: c.Overview || '',
-                                                            totalFee: c.TotalFee || '',
-                                                            image: c.Image || '',
-                                                            coverImage: c.CoverImage || '',
-                                                            targetAudience: c.TargetAudience || '',
-                                                            skillLevel: c.SkillLevel || '',
-                                                            language: c.Language || '',
-                                                            courseOutcome: c.CourseOutcome || '',
-                                                            category: c.Category || '',
-                                                            duration: c.Duration || '',
-                                                            startingDate: c.StartingDate ? c.StartingDate.split('T')[0] : '',
-                                                            visibility: c.Visibility !== 0,
-                                                            showLessons: c.ShowLessons !== 0
-                                                        });
-                                                        setShowEditCourse(true);
-                                                    }}
-                                                    style={{ color: 'var(--primary)', padding: '6px', borderRadius: '4px', background: 'transparent', border: 'none', cursor: 'pointer', marginRight: '8px' }}
-                                                    title="Edit Course"
-                                                >
-                                                    <Edit2 size={16} />
                                                 </button>
                                                 <button 
                                                     onClick={() => handleDeleteBatch(c.ClassID, c.BatchName)}
