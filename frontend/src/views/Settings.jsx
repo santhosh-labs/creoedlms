@@ -217,7 +217,7 @@ export default function SettingsPage({ user }) {
             </div>
 
             {/* ── Tab strip ─────────────────────────────────── */}
-            <div style={{ display: 'flex', gap: '4px', background: 'var(--bg)', borderRadius: '12px', padding: '5px', marginBottom: '26px', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: '4px', background: 'var(--bg)', borderRadius: '12px', padding: '5px', marginBottom: '26px', border: '1px solid var(--border)', flexWrap: 'wrap' }} className="settings-tabs">
                 {TABS.map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
                         flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
@@ -246,7 +246,7 @@ export default function SettingsPage({ user }) {
                     ) : profile && (
                         <>
                             {/* Avatar + name strip */}
-                            <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '20px', padding: '22px 28px' }}>
+                            <div style={{ ...card, display: 'flex', alignItems: 'center', gap: '20px', padding: '22px 28px', flexWrap: 'wrap' }}>
                                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '26px', fontWeight: 800, flexShrink: 0 }}>
                                     {(profile.Name || 'U').charAt(0).toUpperCase()}
                                 </div>

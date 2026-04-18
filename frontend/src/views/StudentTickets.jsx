@@ -17,6 +17,7 @@ export default function StudentTickets({ user }) {
     const [tutors, setTutors]       = useState([]);
     const [creating, setCreating]   = useState(false);
     const [filter, setFilter]       = useState('All');
+    const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
 
     const fetchTickets = () => {
         setLoading(true);
@@ -25,6 +26,7 @@ export default function StudentTickets({ user }) {
 
     const openTicket = async (t) => {
         setSelected(t);
+        setMobileView('detail');
         const r = await api.get(`/tickets/${t.ID}/replies`).catch(() => ({ data:[] }));
         setReplies(r.data);
     };
@@ -120,10 +122,10 @@ export default function StudentTickets({ user }) {
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(340px, 1fr) 2.5fr', gap: '24px', height: 'calc(100vh - 160px)', minHeight:'600px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 2.5fr', gap: '24px', height: 'calc(100vh - 160px)', minHeight: '500px' }} className="tickets-grid">
 
                 {/* Left panel — ticket list */}
-                <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }} className={`tickets-list-panel ${mobileView === 'detail' ? 'mobile-hidden' : ''}`}>
                     <div style={{ padding: '20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '12px', alignItems: 'center', background: 'rgba(26,174,100,0.03)' }}>
                         <div style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <MessageSquare size={18} style={{ color: 'var(--primary)' }} />
@@ -177,7 +179,7 @@ export default function StudentTickets({ user }) {
                 </div>
 
                 {/* Right panel — conversation */}
-                <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }} className={`tickets-detail-panel ${mobileView === 'list' ? 'mobile-hidden' : ''}`}>
                     {!selected ? (
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', background: 'var(--surface)' }}>
                             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', boxShadow:'0 4px 16px rgba(26,174,100,0.2)' }}>
@@ -189,10 +191,11 @@ export default function StudentTickets({ user }) {
                     ) : (
                         <>
                             {/* Header */}
-                            <div style={{ padding: '24px 28px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                                    <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-main)', lineHeight: 1.4, flex: 1, paddingRight: '20px' }}>{selected.Subject}</h2>
-                                    <span style={{ fontSize:'12px', fontWeight:700, padding:'6px 14px', borderRadius:'20px', background:STATUS_BG[selected.Status]||'#eee', color:STATUS_COLOR[selected.Status]||'#888' }}>{selected.Status}</span>
+                            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                    <button className="btn btn-secondary" style={{ display: 'none' }} onClick={() => setMobileView('list')} id="ticket-back-btn">← Back</button>
+                                    <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-main)', lineHeight: 1.4, flex: 1, paddingRight: '12px' }}>{selected.Subject}</h2>
+                                    <span style={{ fontSize:'12px', fontWeight:700, padding:'6px 14px', borderRadius:'20px', background:STATUS_BG[selected.Status]||'#eee', color:STATUS_COLOR[selected.Status]||'#888', whiteSpace:'nowrap' }}>{selected.Status}</span>
                                 </div>
                                 {selected.TutorName && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>

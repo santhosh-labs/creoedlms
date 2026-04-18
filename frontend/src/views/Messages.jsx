@@ -16,6 +16,7 @@ export default function Messages({ user }) {
     const [lightbox, setLightbox]         = useState(null); // full-screen image
     const messagesEndRef = useRef(null);
     const fileInputRef   = useRef(null);
+    const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
 
     useEffect(() => {
         api.get('/messages/users').then(r => setContacts(r.data)).catch(() => {});
@@ -125,6 +126,11 @@ export default function Messages({ user }) {
         }
     };
 
+    const handleContactClick = (c) => {
+        setActiveContact(c);
+        setMobileView('chat');
+    };
+
     const filteredContacts = contacts.filter(c =>
         c.Name.toLowerCase().includes(search.toLowerCase()) ||
         (c.StudentCode && c.StudentCode.toLowerCase().includes(search.toLowerCase()))
@@ -154,7 +160,7 @@ export default function Messages({ user }) {
             <div style={{ display: 'flex', height: '100%', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', background: 'var(--surface)' }}>
 
                 {/* Left Sidebar - Contact List */}
-                <div style={{ width: '320px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+                <div style={{ width: '300px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg)', flexShrink: 0 }} className={`msg-contacts-panel ${mobileView === 'chat' ? 'mobile-hidden' : ''}`}>
                     <div style={{ padding: '16px', borderBottom: '1px solid var(--border-light)' }}>
                         <h2 style={{ margin: '0 0 12px', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <MessageCircle size={18} style={{ color: 'var(--primary)' }}/> Messages
@@ -176,7 +182,7 @@ export default function Messages({ user }) {
                         ) : filteredContacts.length === 0 ? (
                             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No matches found.</div>
                         ) : filteredContacts.map(c => (
-                            <div key={c.ID} onClick={() => setActiveContact(c)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border-light)', background: activeContact?.ID === c.ID ? 'rgba(26,174,100,0.08)' : 'transparent', transition: 'background 0.15s' }}>
+                            <div key={c.ID} onClick={() => handleContactClick(c)} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border-light)', background: activeContact?.ID === c.ID ? 'rgba(26,174,100,0.08)' : 'transparent', transition: 'background 0.15s' }}>
                                 <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg,#1aae64,#0d8a4f)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>
                                     {c.Name.charAt(0)}
                                 </div>
@@ -192,7 +198,7 @@ export default function Messages({ user }) {
                 </div>
 
                 {/* Right Area - Chat View */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', minWidth: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--surface)', minWidth: 0 }} className={`msg-chat-panel ${mobileView === 'list' ? 'mobile-hidden' : ''}`}>
                     {!activeContact ? (
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'var(--bg)', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
@@ -204,7 +210,8 @@ export default function Messages({ user }) {
                     ) : (
                         <>
                             {/* Chat Header */}
-                            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg)' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg)' }}>
+                                <button className="msg-back-btn" onClick={() => setMobileView('list')} style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '4px 8px 4px 0', fontWeight: 700, fontSize: '20px', lineHeight: 1 }}>‹</button>
                                 <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg,#1aae64,#0d8a4f)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px' }}>
                                     {activeContact.Name.charAt(0)}
                                 </div>

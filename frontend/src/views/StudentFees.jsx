@@ -38,7 +38,7 @@ export default function StudentFees({ user }) {
                         <p style={{ color: 'var(--text-muted)' }}>No fee records were found for your account. Contact administration if this is an error.</p>
                     </div>
                 ) : fee && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '24px', alignItems: 'start' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1fr) 2fr', gap: '24px', alignItems: 'start' }} className="fees-grid">
                         
                         {/* Summary Card */}
                         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>

@@ -1047,4 +1047,80 @@ button {
   .page-title { font-size: 16px; }
   .btn { font-size: 12px; height: 30px; padding: 0 10px; }
   .section-title { font-size: 13px; }
-}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STUDENT PAGE MOBILE RESPONSIVENESS
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Tickets ── */
+@media (max-width: 768px) {
+  .tickets-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+  .tickets-list-panel {
+    height: 70vh;
+  }
+  .tickets-list-panel.mobile-hidden,
+  .tickets-detail-panel.mobile-hidden {
+    display: none !important;
+  }
+  .tickets-detail-panel {
+    height: 85vh;
+  }
+  #ticket-back-btn {
+    display: inline-flex !important;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+}
+
+/* ── Messages ── */
+@media (max-width: 768px) {
+  .msg-contacts-panel {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: unset !important;
+  }
+  .msg-contacts-panel.mobile-hidden,
+  .msg-chat-panel.mobile-hidden {
+    display: none !important;
+  }
+  .msg-chat-panel {
+    width: 100%;
+    min-height: 70vh;
+  }
+  .msg-back-btn {
+    display: flex !important;
+  }
+}
+
+/* ── Fees / Payments ── */
+@media (max-width: 700px) {
+  .fees-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Settings tabs ── */
+@media (max-width: 768px) {
+  .settings-tabs {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    padding: 8px !important;
+  }
+  .settings-tabs button {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+    flex: 1 1 auto !important;
+    min-width: 80px !important;
+    text-align: center !important;
+  }
+  .settings-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
