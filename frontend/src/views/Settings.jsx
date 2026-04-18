@@ -40,7 +40,6 @@ const toast = (msg, color = 'var(--primary)') => {
 const card  = { background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', padding: '28px', marginBottom: '20px' };
 const sh    = { fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '9px' };
 const lbl   = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' };
-const lbl   = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', display: 'block' };
 const ro    = { padding: '10px 14px', background: 'var(--bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', fontSize: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' };
 
 const Toggle = ({ val, set }) => (
@@ -194,8 +193,6 @@ export default function SettingsPage({ user }) {
     };
 
     // ── Helpers ────────────────────────────────────────────────
-    const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-
     const fmt = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
     // ── Tab definitions ────────────────────────────────────────
