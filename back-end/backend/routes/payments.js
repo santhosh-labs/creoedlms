@@ -6,7 +6,14 @@ const { pool } = require('../config/db');
 const { verifyToken } = require('../middleware/auth');
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Safe initialization — don't crash if env vars are missing
+let resend = null;
+try {
+    const resendKey = process.env.RESEND_API_KEY || 're_33vnJG4v_7rRJbG6JJ698zrehX27Y3yn3';
+    resend = new Resend(resendKey);
+} catch (e) {
+    console.error('Resend init failed in payments:', e.message);
+}
 
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_Se81hx2CKtgm8C';
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'BBcrmzkpfZt7x6wmm8zIEGUC';
@@ -152,7 +159,7 @@ router.post('/verify', verifyToken, async (req, res) => {
             }
 
             // 4. Send Confirmation Email via Resend
-            if (process.env.RESEND_API_KEY) {
+            if (resend) {
                 try {
                     await resend.emails.send({
                         from: 'Creoed <no-reply@creoed.com>',

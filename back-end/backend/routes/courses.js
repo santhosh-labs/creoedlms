@@ -33,8 +33,10 @@ router.post('/', verifyToken, authorizeRoles('Super Admin', 'Admin'), async (req
 // @access  Public
 router.get('/public', async (req, res) => {
     try {
+        // OPTIMIZATION: Excluded heavy fields like 'Description' and 'CoverImage' from the bulk list 
+        // to prevent massive 6.7MB+ network payloads, since the homepage doesn't use them.
         const [rows] = await pool.query(
-            'SELECT ID, CourseCode, Name, Overview, Description, TotalFee, CreatedAt, Image, CoverImage, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE Visibility = 1 OR Visibility IS NULL ORDER BY CreatedAt DESC'
+            'SELECT ID, CourseCode, Name, Overview, TotalFee, CreatedAt, Image, TargetAudience, SkillLevel, Language, CourseOutcome, Category, Duration, StartingDate FROM Courses WHERE Visibility = 1 OR Visibility IS NULL ORDER BY CreatedAt DESC'
         );
         res.json(rows);
     } catch (err) {

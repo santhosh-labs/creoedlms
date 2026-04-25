@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock, ArrowRight } from 'lucide-react';
 import api from '../api';
@@ -46,6 +46,20 @@ export default function Login() {
     const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
     const [otp, setOtp] = useState('');
 
+    const [captchaNum1, setCaptchaNum1] = useState(0);
+    const [captchaNum2, setCaptchaNum2] = useState(0);
+    const [captchaAnswer, setCaptchaAnswer] = useState('');
+
+    const generateCaptcha = () => {
+        setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
+        setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
+        setCaptchaAnswer('');
+    };
+
+    useEffect(() => {
+        generateCaptcha();
+    }, []);
+
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -64,8 +78,15 @@ export default function Login() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
+
+        if (parseInt(captchaAnswer) !== (captchaNum1 + captchaNum2)) {
+            setError('Incorrect CAPTCHA answer. Please prove you are not a robot.');
+            generateCaptcha();
+            return;
+        }
+
+        setLoading(true);
         try {
             const res = await api.post('/auth/login', { email, password });
             
@@ -159,6 +180,16 @@ export default function Login() {
                                           style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
                                           Forgot password?
                                       </button>
+                                  </div>
+                              </div>
+
+                              <div style={{ position: 'relative' }}>
+                                  <label style={labelStyle}>Verify you are human</label>
+                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                      <div style={{ background: '#f1f5f9', padding: '0.8rem 1rem', borderRadius: '10px', fontWeight: 700, color: '#1e293b', fontSize: '1.05rem', border: '1.5px solid #e2e8f0', minWidth: '90px', textAlign: 'center', userSelect: 'none' }}>
+                                          {captchaNum1} + {captchaNum2} =
+                                      </div>
+                                      <input type="number" value={captchaAnswer} onChange={e => setCaptchaAnswer(e.target.value)} required placeholder="?" style={{ ...inputStyle, paddingLeft: '1.2rem', fontSize: '1.05rem', fontWeight: 600 }} onFocus={e => e.target.style.borderColor = '#7c3aed'} onBlur={e => e.target.style.borderColor = '#e2e8f0'} />
                                   </div>
                               </div>
 
