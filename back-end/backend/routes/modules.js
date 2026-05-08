@@ -128,18 +128,17 @@ router.put('/lessons/:lessonId', verifyToken, authorizeRoles('Tutor', 'Admin', '
 
         // If it's a Live Class and session date/time provided, update the corresponding Session row
         if (type === 'Live Class' && classId && sessionDate) {
-            const sessionDatetime = sessionTime ? `${sessionDate} ${sessionTime}:00` : `${sessionDate} 00:00:00`;
             // Try to update an existing session that matches by title in the same class
             const [updateResult] = await pool.query(
-                `UPDATE Sessions SET SessionDate = ?, MeetingLink = ? 
+                `UPDATE Sessions SET SessionDate = ?, SessionTime = ?, MeetingLink = ? 
                  WHERE ClassID = ? AND Title = ? ORDER BY CreatedAt DESC LIMIT 1`,
-                [sessionDatetime, meetingLink || null, classId, title]
+                [sessionDate, sessionTime || null, meetingLink || null, classId, title]
             );
             // If no existing session was found, create one
-            if (updateResult.affectedRows === 0 && sessionDate) {
+            if (updateResult.affectedRows === 0) {
                 await pool.query(
-                    'INSERT INTO Sessions (ClassID, Title, SessionDate, MeetingLink) VALUES (?, ?, ?, ?)',
-                    [classId, title, sessionDatetime, meetingLink || null]
+                    'INSERT INTO Sessions (ClassID, Title, SessionDate, SessionTime, MeetingLink) VALUES (?, ?, ?, ?, ?)',
+                    [classId, title, sessionDate, sessionTime || null, meetingLink || null]
                 );
             }
         }
