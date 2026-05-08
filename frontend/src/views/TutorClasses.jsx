@@ -107,10 +107,10 @@ function StudentAnalytics({ student, classId, onBack }) {
             </div>
 
             {/* ── KPI Cards (3 only) ─────────────────────────────────── */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'16px', marginBottom:'28px' }}>
+            <div className="kpi-grid" style={{ marginBottom:'28px' }}>
                 {kpis.map(k => (
-                    <div key={k.label} style={{ background: k.bg, border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'20px', display:'flex', alignItems:'center', gap:'16px', boxShadow:'var(--shadow-sm)' }}>
-                        <div style={{ width:'44px', height:'44px', borderRadius:'var(--radius-md)', background: k.iconBg, display:'flex', alignItems:'center', justifyContent:'center', color: k.color, flexShrink:0 }}>
+                    <div key={k.label} className="kpi-card" style={{ background: k.bg, border:'1px solid var(--border)', borderRadius:'var(--radius-md)', padding:'20px', display:'flex', alignItems:'center', gap:'16px', boxShadow:'var(--shadow-sm)' }}>
+                        <div className="kpi-icon" style={{ width:'44px', height:'44px', borderRadius:'var(--radius-md)', background: k.iconBg, display:'flex', alignItems:'center', justifyContent:'center', color: k.color, flexShrink:0 }}>
                             {k.icon}
                         </div>
                         <div style={{ minWidth:0 }}>
@@ -123,7 +123,7 @@ function StudentAnalytics({ student, classId, onBack }) {
             </div>
 
             {/* ── Assignments & Quizzes ──────────────────────────────── */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px', marginBottom:'20px' }}>
+            <div className="grid-2" style={{ marginBottom:'20px' }}>
                 {/* Assignments */}
                 <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', overflow:'hidden', boxShadow:'var(--shadow-sm)' }}>
                     <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:'8px' }}>
@@ -206,6 +206,7 @@ function StudentAnalytics({ student, classId, onBack }) {
                         No live sessions recorded yet.
                     </div>
                 ) : (
+                    <div className="table-container" style={{ margin: 0, paddingBottom: 0 }}>
                     <table style={{ width:'100%', borderCollapse:'collapse' }}>
                         <thead>
                             <tr style={{ background:'var(--bg)' }}>
@@ -240,6 +241,7 @@ function StudentAnalytics({ student, classId, onBack }) {
                             })}
                         </tbody>
                     </table>
+                    </div>
                 )}
             </div>
         </div>
