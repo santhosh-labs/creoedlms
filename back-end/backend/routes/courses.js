@@ -221,6 +221,25 @@ router.get('/classes/my', verifyToken, async (req, res) => {
     }
 });
 
+// @route   GET api/courses/classes/:classId/students
+// @desc    Get all enrolled students for a specific class
+// @access  Private (Admin, Super Admin, Tutor)
+router.get('/classes/:classId/students', verifyToken, authorizeRoles('Super Admin', 'Admin', 'Tutor'), async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT u.ID as StudentID, u.Name, u.StudentCode
+            FROM ClassStudents cs
+            JOIN Users u ON cs.StudentID = u.ID
+            WHERE cs.ClassID = ?
+            ORDER BY u.Name ASC
+        `, [req.params.classId]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 // @route   GET api/courses/tutors
 // @desc    Get all tutors (for batch creation dropdown)
 // @access  Private (Admin, Super Admin)

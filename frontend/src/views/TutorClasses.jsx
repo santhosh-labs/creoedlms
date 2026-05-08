@@ -336,25 +336,14 @@ function ClassDetail({ cls, onBack }) {
     const [viewStudent, setViewStudent] = useState(null);
 
     useEffect(() => {
-        // Fetch sessions — then use the first session to get the student list for this class
+        // Fetch sessions
         api.get(`/attendance/class/${cls.ClassID}/sessions`)
-            .then(r => {
-                setSessions(r.data);
-                if (r.data.length > 0) {
-                    // Use first session's attendance roll to get enrolled students (deduped)
-                    api.get(`/attendance/session/${r.data[0].ID}`)
-                        .then(res => {
-                            // Deduplicate by StudentID just in case
-                            const seen = new Set();
-                            setStudents(res.data.filter(s => {
-                                if (seen.has(s.StudentID)) return false;
-                                seen.add(s.StudentID);
-                                return true;
-                            }));
-                        })
-                        .catch(() => {});
-                }
-            })
+            .then(r => setSessions(r.data))
+            .catch(() => {});
+
+        // Fetch enrolled students directly for the class
+        api.get(`/courses/classes/${cls.ClassID}/students`)
+            .then(r => setStudents(r.data))
             .catch(() => {})
             .finally(() => setLoading(false));
     }, [cls.ClassID]);
