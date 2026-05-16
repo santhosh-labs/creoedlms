@@ -225,6 +225,11 @@ export default function SuperAdminStudents({ user }) {
   const [changeCourseData, setChangeCourseData] = useState({ courseId: '', classId: '', totalFee: '', amountPaid: '' });
   const [changeCourseLoading, setChangeCourseLoading] = useState(false);
 
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordStudent, setPasswordStudent] = useState(null);
+  const [passwordData, setPasswordData] = useState({ otp: '', newPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
   const isSuperAdmin = user?.role === 'Super Admin';
 
   const [formLoading, setFormLoading] = useState(false);
@@ -302,6 +307,39 @@ export default function SuperAdminStudents({ user }) {
     if (!window.confirm('Unlock this account? They will be able to sign in again.')) return;
     try { await api.put(`/users/students/${id}/unlock`); fetchData(); }
     catch { alert('Failed to unlock account.'); }
+  };
+
+  const handleChangePasswordRequest = async (student) => {
+    try {
+      setLoading(true);
+      await api.post(`/users/students/${student.ID}/change-password-request`);
+      setPasswordStudent(student);
+      setPasswordData({ otp: '', newPassword: '' });
+      setShowPasswordModal(true);
+      alert('An OTP has been sent to your super admin email address.');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to request OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setPasswordLoading(true);
+      await api.put(`/users/students/${passwordStudent.ID}/change-password`, {
+        otp: passwordData.otp,
+        newPassword: passwordData.newPassword
+      });
+      alert('Student password changed successfully.');
+      setShowPasswordModal(false);
+      setPasswordStudent(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleBulkAction = async (action) => {
@@ -541,6 +579,45 @@ export default function SuperAdminStudents({ user }) {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════════════════
+     CHANGE PASSWORD MODAL
+  ══════════════════════════════════════════════════════════════ */
+  if (showPasswordModal && passwordStudent) return (
+    <div className="content-wrapper">
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '14px' }}>
+        <button className="btn btn-secondary" onClick={() => { setShowPasswordModal(false); setPasswordStudent(null); }}>← Back</button>
+        <h2 className="page-title">Change Student Password</h2>
+      </div>
+      <div className="section-card" style={{ maxWidth: '420px', margin: '0 auto' }}>
+        <div className="section-header">
+          <div>
+            <span className="section-title">Security Verification</span>
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Changing password for <strong>{passwordStudent.Name}</strong>. Please enter the OTP sent to your email to confirm.
+            </p>
+          </div>
+        </div>
+        <form onSubmit={handleChangePasswordSubmit} style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={lbl}>OTP Code *</label>
+            <input className="form-input" type="text" placeholder="6-digit OTP" maxLength={6} required value={passwordData.otp} onChange={e => setPasswordData({ ...passwordData, otp: e.target.value })} />
+          </div>
+          <div>
+            <label style={lbl}>New Password *</label>
+            <input className="form-input" type="text" placeholder="Enter new password" required minLength={8} value={passwordData.newPassword} onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })} />
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>Password should be at least 8 characters.</p>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => { setShowPasswordModal(false); setPasswordStudent(null); }}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={passwordLoading || !passwordData.otp || !passwordData.newPassword}>
+              {passwordLoading ? 'Verifying...' : 'Change Password'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -811,6 +888,11 @@ export default function SuperAdminStudents({ user }) {
                     label: 'Send Password Reset',
                     icon: <KeyRound size={14} />,
                     onClick: () => handleSendResetPassword(s.Email)
+                  },
+                  isSuperAdmin && {
+                    label: 'Change Password',
+                    icon: <ShieldAlert size={14} />,
+                    onClick: () => handleChangePasswordRequest(s)
                   },
                   isSuperAdmin && {
                     label: 'Change Course',

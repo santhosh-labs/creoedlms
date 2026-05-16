@@ -3,6 +3,13 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { verifyToken, authorizeRoles } = require('../middleware/auth');
 const { pool } = require('../config/db');
+const { Resend } = require('resend');
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY || 're_33vnJG4v_7rRJbG6JJ698zrehX27Y3yn3';
+let resend = null;
+if (RESEND_API_KEY) {
+    resend = new Resend(RESEND_API_KEY);
+}
 
 // ─── Unique User Code Generator ───────────────────────────────────────────
 // Format by role:
@@ -621,6 +628,84 @@ router.put('/students/:id/change-course', verifyToken, authorizeRoles('Super Adm
         res.status(500).send('Server Error');
     } finally {
         connection.release();
+    }
+});
+
+// @route   POST api/users/students/:id/change-password-request
+// @desc    Request OTP to change student password (sent to super admin)
+// @access  Private (Super Admin)
+router.post('/students/:id/change-password-request', verifyToken, authorizeRoles('Super Admin'), async (req, res) => {
+    try {
+        const adminId = req.user.id;
+        const [rows] = await pool.query('SELECT Email, Name FROM Users WHERE ID = ?', [adminId]);
+        if (rows.length === 0) return res.status(404).json({ message: 'Admin not found' });
+        
+        const admin = rows[0];
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 10 * 60000); // 10 mins
+
+        await pool.query('UPDATE Users SET TwoFactorCode = ?, TwoFactorExpiry = ? WHERE ID = ?', [otpCode, otpExpiry, adminId]);
+
+        if (resend) {
+            await resend.emails.send({
+                from: 'Creoed <no-reply@creoed.com>',
+                to: admin.Email,
+                subject: 'OTP to Change Student Password',
+                html: `<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:24px;border:1px solid #e1e8ed;border-radius:8px;">
+                        <h2 style="color:#7c3aed;text-align:center;">Change Password Verification</h2>
+                        <p>Hi ${admin.Name},</p>
+                        <p>You requested to change a student's password. Please use the following 6-digit code to verify your identity.</p>
+                        <div style="text-align:center;margin:30px 0;font-size:32px;font-weight:bold;letter-spacing:4px;color:#1e293b;">
+                            ${otpCode}
+                        </div>
+                        <p>If you did not request this, please secure your account immediately.</p>
+                    </div>`
+            });
+            console.log('OTP sent for student password change:', admin.Email);
+        } else {
+            console.log('OTP (fallback) for student password change:', otpCode);
+        }
+        res.json({ message: 'OTP sent to your email.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   PUT api/users/students/:id/change-password
+// @desc    Verify OTP and change student password
+// @access  Private (Super Admin)
+router.put('/students/:id/change-password', verifyToken, authorizeRoles('Super Admin'), async (req, res) => {
+    const { otp, newPassword } = req.body;
+    const studentId = req.params.id;
+    const adminId = req.user.id;
+
+    if (!otp || !newPassword) return res.status(400).json({ message: 'OTP and New Password are required' });
+
+    try {
+        const [rows] = await pool.query('SELECT TwoFactorCode, TwoFactorExpiry FROM Users WHERE ID = ?', [adminId]);
+        if (rows.length === 0) return res.status(404).json({ message: 'Admin not found' });
+
+        const admin = rows[0];
+        if (!admin.TwoFactorCode || admin.TwoFactorCode !== otp) {
+            return res.status(400).json({ message: 'Invalid or incorrect verification code' });
+        }
+        if (new Date() > new Date(admin.TwoFactorExpiry)) {
+            return res.status(400).json({ message: 'Verification code has expired.' });
+        }
+
+        // Clear OTP
+        await pool.query('UPDATE Users SET TwoFactorCode = NULL, TwoFactorExpiry = NULL WHERE ID = ?', [adminId]);
+
+        // Hash new password and update student
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        await pool.query('UPDATE Users SET PasswordHash = ? WHERE ID = ?', [hashedPassword, studentId]);
+
+        res.json({ message: 'Student password changed successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 
